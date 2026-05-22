@@ -12,7 +12,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
-/** Registered manually from ClientEvents.register(). */
 public final class ClientPlaybackTracker {
     private static final Map<UUID, BackpackPlaybackSession> SESSIONS = new HashMap<>();
 
@@ -43,7 +42,6 @@ public final class ClientPlaybackTracker {
         return SESSIONS.containsKey(storageUuid);
     }
 
-    /** Current melody being played for this storage, or null if none. */
     @Nullable
     public static ResourceLocation getCurrentMelody(UUID storageUuid) {
         BackpackPlaybackSession s = SESSIONS.get(storageUuid);

@@ -60,10 +60,6 @@ public final class SbJukeboxAccess implements JukeboxAccess {
 
     @Override
     public java.util.List<ItemStack> visibleSlotStacks() {
-        // Container's slot list is kept in sync with server (via menu.setItem).
-        // The wrapper.discInventory on the *client* can be desynced because SB's
-        // capability/wrapper pipeline doesn't always reflect slot updates back
-        // into the wrapper's handler. Slot.getItem() always shows truth.
         java.util.List<ItemStack> out = new java.util.ArrayList<>(container.getSlots().size());
         for (net.minecraft.world.inventory.Slot s : container.getSlots()) {
             out.add(s.getItem());

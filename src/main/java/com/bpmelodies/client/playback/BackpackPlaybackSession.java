@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Client-side playback for one backpack. Drives note iteration on tick. */
 public class BackpackPlaybackSession {
     public final UUID storageUuid;
     public final ResourceLocation instrumentItemId;
@@ -80,7 +79,7 @@ public class BackpackPlaybackSession {
                 if (tickCount == 1 || tickCount % 40 == 0) {
                     com.bpmelodies.BpMelodiesMod.LOGGER.info("[playback-session] tick #{} melody not loaded yet melody={}", tickCount, melodyId);
                 }
-                return; // not loaded yet
+                return;
             }
             resolvedMelody = m;
             com.bpmelodies.BpMelodiesMod.LOGGER.info("[playback-session] tick #{} RESOLVED melody={} length={} tracks={}",
@@ -145,7 +144,6 @@ public class BackpackPlaybackSession {
         activeNotes.clear();
     }
 
-    /** Stops cleanly — cancels all sustaining notes. */
     public void stop() {
         cancelActive();
     }

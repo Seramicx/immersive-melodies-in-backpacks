@@ -61,22 +61,16 @@ public class ImInstrumentDiscHandler implements IDiscHandler<MelodyDescriptor> {
         ServerPlaybackTracker.start(serverLevel, storageUuid, discItemStack, rl, itemId, BlockPos.containing(position), entityId, onFinished);
     }
 
-    /**
-     * Register a no-op SoundInfo with SB so its periodic keep-alive doesn't see our UUID
-     * as missing and immediately flip wrapper.isPlaying=false. Long.MAX_VALUE finish time
-     * means SB will never auto-time us out — we control finishing through our own tracker.
-     */
     private static void keepSbAlive(ServerLevel level, BlockPos pos, UUID storageUuid) {
         try {
             ServerStorageSoundHandler.putSoundInfo(level, storageUuid, () -> {}, Vec3.atCenterOf(pos), Long.MAX_VALUE);
         } catch (Throwable t) {
-            // SB version mismatch — best-effort
         }
     }
 
     private static boolean isImEnabledFor(UUID storageUuid) {
         var wrapper = com.bpmelodies.common.playback.ServerPlaybackTracker.getWrapperFor(storageUuid);
-        if (wrapper == null) return true; // default enabled when no info
+        if (wrapper == null) return true;
         return PlaybackNbt.isImEnabled(wrapper.getUpgradeStack());
     }
 

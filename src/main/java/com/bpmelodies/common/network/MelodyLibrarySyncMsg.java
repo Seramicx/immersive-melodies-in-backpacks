@@ -12,9 +12,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-/** Server pushes IM's song-library directly into our control. Bypasses IM's
- *  own networking which has shown timing issues when triggered from outside
- *  IM's normal right-click flow. */
 public record MelodyLibrarySyncMsg(Map<ResourceLocation, String> melodies) {
 
     public static void encode(MelodyLibrarySyncMsg m, FriendlyByteBuf buf) {

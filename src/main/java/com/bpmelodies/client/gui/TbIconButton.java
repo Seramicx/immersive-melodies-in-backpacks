@@ -6,8 +6,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 
-/** Vanilla-style beveled buttons. Self-contained — bundles its own icon PNGs
- *  (no SC/SB dependency at runtime). */
 public final class TbIconButton {
     public enum Icon { PREV, STOP, PLAY, NEXT, SHUFFLE_OFF, SHUFFLE_ON, REPEAT_OFF, REPEAT_ONE, REPEAT_ALL }
 
@@ -20,7 +18,6 @@ public final class TbIconButton {
 
     private TbIconButton() {}
 
-    /** Draw an 18×18 button with the given icon. `active` = blue accent (toggle ON). */
     public static void draw(GuiGraphics g, int bx, int by, int mx, int my, Icon icon, boolean active) {
         int w = SIZE, h = SIZE;
         boolean hover = mx >= bx && mx < bx + w && my >= by && my < by + h;
@@ -55,7 +52,6 @@ public final class TbIconButton {
                 triangleRight(g, cx - 1, cy, iconColor);
                 g.fill(cx + 3, cy - 4, cx + 4, cy + 4, iconColor);
             }
-            // Icons have their own colors baked in — render without tint (white shader)
             case SHUFFLE_OFF -> blitIcon(g, SHUFFLE_OFF_TEX, bx, by, 0xFFFFFFFF);
             case SHUFFLE_ON  -> blitIcon(g, SHUFFLE_ON_TEX,  bx, by, 0xFFFFFFFF);
             case REPEAT_OFF -> blitIcon(g, REPEAT_OFF_TEX, bx, by, 0xFFFFFFFF);
@@ -78,23 +74,18 @@ public final class TbIconButton {
         }
     }
 
-    /** Blit a 32×32 icon PNG, scaled down to 16×16 centered in the 18×18 button.
-     *  Color tinting via RenderSystem so the icon matches the enabled/disabled/active state. */
     private static void blitIcon(GuiGraphics g, ResourceLocation tex, int bx, int by, int tintARGB) {
         float a = ((tintARGB >> 24) & 0xFF) / 255.0F;
         float r = ((tintARGB >> 16) & 0xFF) / 255.0F;
         float gr = ((tintARGB >> 8) & 0xFF) / 255.0F;
         float b = (tintARGB & 0xFF) / 255.0F;
         RenderSystem.setShaderColor(r, gr, b, a);
-        // 16×16 icon centered in 18×18 button → 1px padding each side
         g.blit(tex, bx + 1, by + 1, 16, 16, 0, 0, 32, 32, 32, 32);
         RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
     }
 
-    /** "1" overlay for REPEAT_ONE, positioned in the clear center of the loop icon. */
     private static void repeatOneOverlay(GuiGraphics g, int cx, int cy, int color) {
         Font f = Minecraft.getInstance().font;
-        // "1" is ~3px wide, 7px tall — center precisely at (cx, cy) with shadow for readability
         int tw = f.width("1");
         g.drawString(f, "1", cx - tw / 2, cy - 3, color, false);
     }

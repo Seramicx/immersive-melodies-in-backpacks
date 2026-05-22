@@ -15,8 +15,12 @@ public class MelodyPickerSbWidget extends WidgetBase {
     private final MelodyPickerWidget inner;
 
     public MelodyPickerSbWidget(Position position, Supplier<Optional<JukeboxAccess>> accessProvider) {
-        super(position, new Dimension(MelodyPickerWidget.W, MelodyPickerWidget.H));
-        this.inner = new MelodyPickerWidget(position.x(), position.y(), accessProvider::get);
+        this(position, accessProvider, true);
+    }
+
+    public MelodyPickerSbWidget(Position position, Supplier<Optional<JukeboxAccess>> accessProvider, boolean showImToggle) {
+        super(position, new Dimension(MelodyPickerWidget.W, showImToggle ? MelodyPickerWidget.H : MelodyPickerWidget.H_NO_TOGGLE));
+        this.inner = new MelodyPickerWidget(position.x(), position.y(), accessProvider::get, showImToggle);
     }
 
     @Override

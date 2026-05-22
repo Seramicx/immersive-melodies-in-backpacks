@@ -12,8 +12,6 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.List;
 import java.util.function.Supplier;
 
-/** TB-side transport controls. SB drives play/stop/next/prev/shuffle/repeat through its
- *  own buttons; this packet replicates those actions for TB. */
 public record SetTransportFlagMsg(Op op, int value) {
     public enum Op { PLAY, STOP, NEXT, PREV, TOGGLE_SHUFFLE, CYCLE_REPEAT }
 
@@ -51,8 +49,6 @@ public record SetTransportFlagMsg(Op op, int value) {
         });
     }
 
-    /** Replicates the SB wrapper-mixin skip logic on TB: pick new melody based on
-     *  shuffle/repeat state (stored on upgrade NBT) and restart playback. */
     private static void handleSkip(Player player, JukeboxAccess access, int dir) {
         int slot = access.findInstrumentSlot();
         if (slot < 0) return;
@@ -97,6 +93,5 @@ public record SetTransportFlagMsg(Op op, int value) {
         } else if (stopAtEdge) {
             ServerPlaybackTracker.stop(uuid);
         }
-        // shuffle back with empty history → no-op
     }
 }

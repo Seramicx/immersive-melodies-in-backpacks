@@ -9,7 +9,6 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-/** Client → server: toggle IM mode for the open jukebox upgrade. */
 public record ToggleImModeMsg(boolean enabled) {
     public static void encode(ToggleImModeMsg m, FriendlyByteBuf buf) {
         buf.writeBoolean(m.enabled);
@@ -26,7 +25,6 @@ public record ToggleImModeMsg(boolean enabled) {
         JukeboxAccess.findJukeboxInOpenMenu(player).ifPresent(access -> {
             PlaybackNbt.setImEnabled(access.upgradeStack(), msg.enabled);
             access.markUpgradeDirty();
-            // If turning OFF mid-playback, stop our session too.
             if (!msg.enabled) {
                 ServerPlaybackTracker.stop(access.storageUuid());
             }

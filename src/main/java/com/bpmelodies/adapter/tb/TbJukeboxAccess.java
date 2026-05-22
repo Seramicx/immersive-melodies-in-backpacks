@@ -85,7 +85,6 @@ public final class TbJukeboxAccess implements JukeboxAccess {
     public void markUpgradeDirty() {
         ItemStack live = upgrade.getDataHolderStack();
         if (live.isEmpty()) return;
-        // Re-set the slot to its (already-mutated) contents to trigger onContentsChanged + sync.
         upgrade.getUpgradeManager().getUpgradesHandler().setStackInSlot(upgrade.getDataHolderSlot(), live.copy());
     }
 }

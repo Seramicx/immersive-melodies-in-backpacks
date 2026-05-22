@@ -12,7 +12,6 @@ import net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeContainer;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 
-/** Registered manually from ClientEvents.register(). */
 public final class SbInstrumentSlotWatcher {
     private SbInstrumentSlotWatcher() {}
 
@@ -20,7 +19,7 @@ public final class SbInstrumentSlotWatcher {
     private static Boolean lastHadInstrument = null;
     private static Method onUpgradesChangedMethod;
     private static int tickCount = 0;
-    private static String lastEmitted = ""; // de-dupe verbose log
+    private static String lastEmitted = "";
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
@@ -53,9 +52,6 @@ public final class SbInstrumentSlotWatcher {
             lastHadInstrument = null;
             return;
         }
-        // Read via the slot list — client-side, wrapper.discInventory can be
-        // desynced (see git history / DESYNC logs) but slot.getItem() always
-        // reflects the truly displayed slot contents.
         boolean has = false;
         for (var s : juke.getSlots()) {
             if (JukeboxAccess.isInstrument(s.getItem())) { has = true; break; }
@@ -82,7 +78,6 @@ public final class SbInstrumentSlotWatcher {
         }
     }
 
-    /** Logs only when the message differs from the previous one — avoids spam. */
     private static void emit(String msg) {
         if (!msg.equals(lastEmitted)) {
             lastEmitted = msg;

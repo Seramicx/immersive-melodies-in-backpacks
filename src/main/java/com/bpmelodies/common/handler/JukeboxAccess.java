@@ -28,7 +28,6 @@ public interface JukeboxAccess {
 
     void markUpgradeDirty();
 
-    /** Re-set a slot to its current contents to trigger sync. */
     default void markDiscSlotDirty(int slot) {
         IItemHandler inv = discInventory();
         if (inv instanceof IItemHandlerModifiable mod) {
@@ -36,12 +35,8 @@ public interface JukeboxAccess {
         }
     }
 
-    /** Slot stacks as visible to the player. Client-side, this comes from the
-     *  menu's Slot.getItem() (which sees server-synced state). Server-side it
-     *  comes from the underlying handler. The two implementations override. */
     java.util.List<ItemStack> visibleSlotStacks();
 
-    /** First disc slot containing an InstrumentItem, or -1. */
     default int findInstrumentSlot() {
         java.util.List<ItemStack> stacks = visibleSlotStacks();
         for (int i = 0; i < stacks.size(); i++) {
@@ -61,7 +56,6 @@ public interface JukeboxAccess {
         return !stack.isEmpty() && stack.getItem() instanceof InstrumentItem;
     }
 
-    /** IM-mode toggle for this jukebox upgrade. Defaults true. */
     default boolean isImEnabled() {
         return com.bpmelodies.common.playback.PlaybackNbt.isImEnabled(upgradeStack());
     }
