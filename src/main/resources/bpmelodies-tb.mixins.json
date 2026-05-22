@@ -1,0 +1,22 @@
+{
+    "required": true,
+    "minVersion": "0.8.5",
+    "package": "com.bpmelodies.mixin.tb",
+    "refmap": "bpmelodies.refmap.json",
+    "compatibilityLevel": "JAVA_17",
+    "plugin": "com.bpmelodies.mixin.TbMixinPlugin",
+    "mixins": [
+        "TbDiskHandlerMixin",
+        "TbDiskSlotMixin",
+        "TbJukeboxEjectMixin",
+        "TbTabSizeMixin"
+    ],
+    "client": [
+        "TbJukeboxWidgetMixin",
+        "TbWidgetSizeMixin",
+        "TbEjectButtonMixin"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}
