@@ -17,11 +17,6 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.*;
 
-/**
- * Fixed-width = 72 pixels — matches a 4-slot SB jukebox grid (4 × 18) so
- * the SB tab grows ONLY vertically when the picker appears, never horizontally.
- * All children render inside [x, x+W] × [y, y+H]; nothing overflows.
- */
 public class MelodyPickerWidget {
     public static final int W = 72;
     public static final int ROW_H = 11;
@@ -29,9 +24,7 @@ public class MelodyPickerWidget {
     public static final int BTN_H = 11;
     public static final int PAGINATION_H = BTN_H;
     public static final int TOGGLE_H = 15;
-    /** Picker height when the IM ON toggle is shown (SB). */
     public static final int H = TOGGLE_H + 1 + PAGE_SIZE * ROW_H + PAGINATION_H + 2;
-    /** Picker height without the IM ON toggle (TB — single slot, toggle is redundant). */
     public static final int H_NO_TOGGLE = PAGE_SIZE * ROW_H + PAGINATION_H + 2;
 
     public interface JukeboxAccessProvider {
@@ -64,7 +57,6 @@ public class MelodyPickerWidget {
         this.pageBox.moveCursorToStart();
     }
 
-    /** Y offset of the song list from picker top — accounts for the optional toggle row. */
     private int listYOffset() { return showImToggle ? (TOGGLE_H + 1) : 0; }
 
     public int getEffectiveHeight() { return showImToggle ? H : H_NO_TOGGLE; }
@@ -94,7 +86,6 @@ public class MelodyPickerWidget {
         return list;
     }
 
-    /** Matches IM's ImmersiveMelodiesScreen sort order: owned-by-me first, then datapack, then others. */
     private static int imSortIndex(ResourceLocation rl, @javax.annotation.Nullable String playerName) {
         if ("player".equals(rl.getNamespace())) {
             if (playerName != null && rl.getPath().startsWith(playerName + "/")) return 2;
@@ -110,11 +101,8 @@ public class MelodyPickerWidget {
     private ResourceLocation currentSelection() {
         return provider.get()
                 .map(a -> {
-                    // If a playback is active, the tracker has the authoritative current melody
-                    // (server-pushed, no stale client NBT). Use it as the highlight source.
                     ResourceLocation live = com.bpmelodies.client.playback.ClientPlaybackTracker.getCurrentMelody(a.storageUuid());
                     if (live != null) return live;
-                    // Otherwise fall back to the instrument's selected_melody NBT.
                     int s = a.findInstrumentSlot();
                     if (s < 0) return (ResourceLocation) null;
                     return PlaybackNbt.getSelectedMelody(a.visibleSlotStacks().get(s));
@@ -143,7 +131,7 @@ public class MelodyPickerWidget {
 
         if (showImToggle) {
             drawToggle(g, mouseX, mouseY, enabled);
-            if (!enabled) return; // songs/pagination hidden when IM off
+            if (!enabled) return;
         }
 
         if (ClientMelodyManager.getMelodiesList().isEmpty()) {
@@ -155,7 +143,6 @@ public class MelodyPickerWidget {
         }
 
         int listY = y + listYOffset();
-        // Inset dark area for song rows (SB tab's outer panel provides outer bg)
         g.fill(x, listY, x + W, listY + PAGE_SIZE * ROW_H, 0xFF373737);
 
         List<Map.Entry<ResourceLocation, MelodyDescriptor>> all = sortedMelodies();
@@ -191,7 +178,6 @@ public class MelodyPickerWidget {
             g.drawString(font, hint, tx, listY + 2 * ROW_H + 2, 0xAAAAAA, false);
         }
 
-        // pagination row — 12-wide × 15-tall buttons, 22-wide box with 1px gaps before/after
         int pagY = listY + PAGE_SIZE * ROW_H + 2;
         drawPageBtn(g, mouseX, mouseY, x + 0,  pagY, 12, "«", currentPage > 1);
         drawPageBtn(g, mouseX, mouseY, x + 12, pagY, 12, "‹", currentPage > 1);
@@ -201,7 +187,6 @@ public class MelodyPickerWidget {
     }
 
     private void drawToggle(GuiGraphics g, int mx, int my, boolean enabled) {
-        // Full-width toggle: "IM ON" (blue accent) / "IM OFF" (gray)
         boolean hover = mx >= x && mx < x + W && my >= y && my < y + TOGGLE_H;
         int border = 0xFF373737;
         int fill, highlight, shadow, textColor;
@@ -224,7 +209,6 @@ public class MelodyPickerWidget {
         g.fill(x + W - 2, y + 1, x + W - 1, y + TOGGLE_H - 1, shadow);
         String label = enabled ? "IM ON" : "IM OFF";
         Font f = Minecraft.getInstance().font;
-        // TOGGLE_H=14: border (y, y+13), highlight (y+1), shadow (y+12). Text 9 tall — y+3 → rows 3..11, 1px gap above highlight, no overlap with shadow.
         g.drawString(f, label, x + (W - f.width(label)) / 2, y + 3, textColor, false);
     }
 
@@ -236,7 +220,6 @@ public class MelodyPickerWidget {
         int highlight = enabled ? 0xFFEDEDED : 0xFFA0A0A0;
         int shadow = enabled ? 0xFF8B8B8B : 0xFF555555;
         int textColor = enabled ? 0xFF202020 : 0xFF555555;
-        // vanilla-style 3D bevel: border + fill + top/left highlight + bottom/right shadow
         g.fill(bx, by, bx + w, by + h, border);
         g.fill(bx + 1, by + 1, bx + w - 1, by + h - 1, fill);
         g.fill(bx + 1, by + 1, bx + w - 1, by + 2, highlight);
@@ -244,9 +227,6 @@ public class MelodyPickerWidget {
         g.fill(bx + 1, by + h - 2, bx + w - 1, by + h - 1, shadow);
         g.fill(bx + w - 2, by + 1, bx + w - 1, by + h - 1, shadow);
         Font f = Minecraft.getInstance().font;
-        // Per-glyph nudges to compensate for MC font's asymmetric advance metrics:
-        //   »  / ›  → 1px right (leading whitespace in advance)
-        //   «      → 1px right (visually offset left otherwise)
         int xOff = (w - f.width(label)) / 2;
         if ("›".equals(label) || "»".equals(label) || "«".equals(label)) xOff += 1;
         g.drawString(f, label, bx + xOff, by + 2, textColor, false);
@@ -257,14 +237,13 @@ public class MelodyPickerWidget {
         if (button != 0) return false;
 
         if (showImToggle) {
-            // Toggle button hit
             if (mouseX >= x && mouseX < x + W && mouseY >= y && mouseY < y + TOGGLE_H) {
                 boolean newEnabled = !isImEnabled();
                 ModNetwork.CHANNEL.sendToServer(new ToggleImModeMsg(newEnabled));
                 Minecraft.getInstance().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 return true;
             }
-            if (!isImEnabled()) return false; // songs hidden, no further interaction
+            if (!isImEnabled()) return false;
         }
 
         if (pageBox.isFocused() && pageBox.mouseClicked(mouseX, mouseY, button)) return true;

@@ -46,17 +46,11 @@ public abstract class JukeboxUpgradeWrapperMixin {
         bpm$tellTracker();
     }
 
-    /** When IM is ON, restrict SB's playlist to instrument slots only — without this,
-     *  SB picks the lowest-numbered slot which means a vanilla disc in slot 0 always
-     *  plays before an instrument in slot 1+. */
     @Inject(method = "initPlaylist", at = @At("RETURN"), remap = false)
     private void bpm$filterAfterInitPlaylist(boolean excludeActive, CallbackInfo ci) {
         bpm$filterPlaylistIfImOn("initPlaylist");
     }
 
-    /** SB also appends discs to the playlist incrementally via tick() when a slot
-     *  is filled — so initPlaylist might never fire. Re-filter on every playNext
-     *  to catch that path. */
     @Inject(method = "playNext(Z)V", at = @At("HEAD"), remap = false)
     private void bpm$filterBeforePlayNext(boolean startOverIfAtTheEnd, CallbackInfo ci) {
         bpm$filterPlaylistIfImOn("playNext");
@@ -103,8 +97,6 @@ public abstract class JukeboxUpgradeWrapperMixin {
         return (net.minecraftforge.items.ItemStackHandler) BPM$DISC_INVENTORY_FIELD.get(this);
     }
 
-    /** Capture this wrapper into the tracker so when a session ends we can
-     *  read shuffle/repeat and pick the next melody. */
     @Inject(method = "play(Lnet/minecraft/world/entity/Entity;)V", at = @At("HEAD"), remap = false)
     private void bpm$captureOnPlayEntity(Entity entity, CallbackInfo ci) {
         bpm$registerWrapper();
@@ -145,7 +137,6 @@ public abstract class JukeboxUpgradeWrapperMixin {
         ci.cancel();
     }
 
-    /** Unified next/prev decision honoring shuffle + repeat. dir=+1 next, -1 prev. */
     private void bpm$handleSkip(ItemStack disc, int dir) {
         JukeboxUpgradeWrapper self = (JukeboxUpgradeWrapper) (Object) this;
         java.util.UUID uuid = bpm$getStorageUuid();
@@ -159,7 +150,6 @@ public abstract class JukeboxUpgradeWrapperMixin {
         boolean stopAtEdge = false;
 
         if (rep == RepeatMode.ONE) {
-            // Repeat ONE: any skip just restarts current song
             pick = cur;
         } else if (shuffle) {
             if (dir > 0) {
@@ -170,7 +160,6 @@ public abstract class JukeboxUpgradeWrapperMixin {
                 }
             } else {
                 pick = uuid == null ? null : ServerPlaybackTracker.popShuffleHistory(uuid);
-                // empty history → nothing to go back to; leave current playing
             }
         } else {
             List<ResourceLocation> all = ServerPlaybackTracker.sortedLibraryIds(playerName);
@@ -202,7 +191,6 @@ public abstract class JukeboxUpgradeWrapperMixin {
             try { self.stop(player); }
             catch (Throwable t) { com.bpmelodies.BpMelodiesMod.LOGGER.warn("[wrapper-mixin] stop failed", t); }
         }
-        // shuffle back with empty history: do nothing (current keeps playing)
     }
 
     @Nullable
@@ -230,11 +218,6 @@ public abstract class JukeboxUpgradeWrapperMixin {
     }
 
     private static Field BPM$ENTITY_PLAYING_FIELD;
-
-    // onDiscFinished mixin removed — for unknown reasons Mixin couldn't hook
-    // that private method (next/previous public hooks worked on the same class).
-    // Shuffle/repeat is now applied from ServerPlaybackTracker.applyShuffleRepeat
-    // before sbOnFinished is invoked.
 
     private void bpm$invokeSetIsPlaying(boolean playing) {
         try {

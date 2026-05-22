@@ -10,11 +10,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/**
- * Targets the anonymous {@code UpgradeSlotItemHandler} subclass declared inside
- * {@code JukeboxUpgrade.getUpgradeSlots(...)} (compiles to {@code JukeboxUpgrade$1}).
- * For Instrument stacks, bypasses TB's IS_PLAYING flag check.
- */
 @Mixin(targets = "com.tiviacz.travelersbackpack.inventory.upgrades.jukebox.JukeboxUpgrade$1")
 public class TbDiskSlotMixin {
     @Inject(method = "mayPlace", at = @At("HEAD"), cancellable = true)

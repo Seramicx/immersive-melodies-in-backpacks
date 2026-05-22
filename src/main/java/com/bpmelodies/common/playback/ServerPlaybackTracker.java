@@ -25,20 +25,16 @@ import java.util.*;
 
 public final class ServerPlaybackTracker {
 
-    private static final int BROADCAST_RADIUS = 64;
-
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
     private static final Map<UUID, WeakReference<net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper>> WRAPPERS = new HashMap<>();
     private static final Map<UUID, Deque<ResourceLocation>> SHUFFLE_HISTORY = new HashMap<>();
     private static final Map<UUID, JukeboxAccess> TB_ACCESS = new HashMap<>();
     private static final Random PICK_RANDOM = new Random();
-    private static final int SHUFFLE_HISTORY_CAP = 50;
-
     public static void pushShuffleHistory(UUID storageUuid, ResourceLocation melody) {
         if (melody == null) return;
         Deque<ResourceLocation> d = SHUFFLE_HISTORY.computeIfAbsent(storageUuid, k -> new ArrayDeque<>());
         d.push(melody);
-        while (d.size() > SHUFFLE_HISTORY_CAP) d.pollLast();
+        while (d.size() > 50) d.pollLast();
     }
 
     @Nullable
@@ -55,9 +51,6 @@ public final class ServerPlaybackTracker {
         return SESSIONS.containsKey(storageUuid);
     }
 
-    /** Stop any TB sessions whose access points at the given upgrade. Used when
-     *  TB ejects the jukebox upgrade — the in-memory upgrade is gone but our
-     *  session would otherwise keep playing the cached instrument stack. */
     public static void stopSessionsForTbUpgrade(Object upgrade) {
         List<UUID> toStop = null;
         for (Map.Entry<UUID, JukeboxAccess> e : TB_ACCESS.entrySet()) {
@@ -72,8 +65,6 @@ public final class ServerPlaybackTracker {
         }
     }
 
-    /** Stop any TB sessions whose access uses the given disc handler. Used when
-     *  the user pulls the instrument out of the disc slot mid-playback. */
     public static void stopSessionsForTbHandler(Object handler) {
         List<UUID> toStop = null;
         for (Map.Entry<UUID, JukeboxAccess> e : TB_ACCESS.entrySet()) {
@@ -90,8 +81,6 @@ public final class ServerPlaybackTracker {
 
     private ServerPlaybackTracker() {}
 
-    /** Mixin into JukeboxUpgradeWrapper.play(...) registers itself here so we can
-     *  read shuffle/repeat and update selected_melody before invoking sbOnFinished. */
     public static void registerWrapper(UUID storageUuid, net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper wrapper) {
         WRAPPERS.put(storageUuid, new WeakReference<>(wrapper));
     }
@@ -131,7 +120,6 @@ public final class ServerPlaybackTracker {
         }
     }
 
-    /** SB entry point: called from IDiscHandler.playDisc. */
     public static void start(ServerLevel level, UUID storageUuid, ItemStack instrumentStack,
                              ResourceLocation melodyId, ResourceLocation instrumentItemId,
                              @Nullable BlockPos pos, int entityId, @Nullable Runnable sbOnFinished) {
@@ -160,8 +148,6 @@ public final class ServerPlaybackTracker {
         broadcastStart(level, pos, entityId, storageUuid, instrumentItemId, melodyId, now);
     }
 
-    /** TB entry point: caller has the access. Also remembers the access so end-of-song
-     *  autoplay can read TB's shuffle/repeat state and restart playback. */
     public static void startFromAccess(Player player, JukeboxAccess access) {
         ItemStack instrument = access.firstInstrumentStack();
         if (instrument == null) {
@@ -195,7 +181,7 @@ public final class ServerPlaybackTracker {
                         s.level,
                         s.blockPos != null ? net.minecraft.world.phys.Vec3.atCenterOf(s.blockPos) : net.minecraft.world.phys.Vec3.ZERO,
                         storageUuid);
-            } catch (Throwable t) { /* best-effort */ }
+            } catch (Throwable t) { }
         }
     }
 
@@ -234,8 +220,6 @@ public final class ServerPlaybackTracker {
             for (UUID uuid : finished) {
                 Session s = SESSIONS.remove(uuid);
                 if (s != null) {
-                    // Pick next melody (updates NBT in place) and decide whether
-                    // we restart playback ourselves vs delegate to SB's onDiscFinished.
                     NextAction action = applyShuffleRepeat(s, uuid);
                     sendNear(s, new BackpackPlayStopMsg(uuid));
                     switch (action) {
@@ -249,7 +233,6 @@ public final class ServerPlaybackTracker {
                             }
                         }
                         case FORCE_PLAYNEXT -> {
-                            // SB's onDiscFinished would bail in repeat=NO. Force playNext(true).
                             var ref = WRAPPERS.get(uuid);
                             var wrapper = ref == null ? null : ref.get();
                             if (wrapper != null) {
@@ -267,7 +250,6 @@ public final class ServerPlaybackTracker {
                             }
                         }
                         case TB_RESTART -> {
-                            // TB path: NBT was updated in applyShuffleRepeat; restart via startFromAccess
                             JukeboxAccess access = TB_ACCESS.get(uuid);
                             if (access != null) {
                                 Player p = (s.entityId >= 0 && s.level.getEntity(s.entityId) instanceof Player pl) ? pl : null;
@@ -281,7 +263,6 @@ public final class ServerPlaybackTracker {
                         }
                         case TB_STOP -> {
                             BpMelodiesMod.LOGGER.info("[tracker] TB end of library — stop uuid={}", uuid);
-                            // already removed from SESSIONS at start of loop; nothing else to do
                         }
                     }
                 }
@@ -291,18 +272,13 @@ public final class ServerPlaybackTracker {
 
     enum NextAction { DELEGATE_SB, FORCE_PLAYNEXT, STOP_END_OF_LIBRARY, TB_RESTART, TB_STOP }
 
-    /** Picks the next melody, updates instrument NBT, and decides how to trigger playback.
-     *  - DELEGATE_SB: SB's onDiscFinished will fire playDisc correctly (repeat ALL/ONE).
-     *  - FORCE_PLAYNEXT: SB's onDiscFinished would bail (repeat=NO with playlist empty),
-     *    we must call wrapper.playNext() ourselves to restart audio.
-     *  - STOP_END_OF_LIBRARY: end of library hit with repeat=NO, stop cleanly. */
     private static NextAction applyShuffleRepeat(Session s, UUID uuid) {
         if (s.instrumentStack.isEmpty()) return NextAction.DELEGATE_SB;
         var ref = WRAPPERS.get(uuid);
         var wrapper = ref == null ? null : ref.get();
 
         boolean shuffle;
-        PlaybackNbt.RepeatMode tbRep = null; // for TB
+        PlaybackNbt.RepeatMode tbRep = null;
         net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.RepeatMode sbRep = null;
         boolean isSb = wrapper != null;
         JukeboxAccess tbAccess = isSb ? null : TB_ACCESS.get(uuid);
@@ -316,7 +292,7 @@ public final class ServerPlaybackTracker {
             tbRep = PlaybackNbt.getRepeat(up);
             BpMelodiesMod.LOGGER.info("[tracker] session end (TB) uuid={} shuffle={} repeat={}", uuid, shuffle, tbRep);
         } else {
-            return NextAction.DELEGATE_SB; // unknown — let caller no-op
+            return NextAction.DELEGATE_SB;
         }
 
         var cur = PlaybackNbt.getSelectedMelody(s.instrumentStack);
@@ -363,11 +339,9 @@ public final class ServerPlaybackTracker {
         }
 
         if (!isSb) {
-            // TB: always restart playback ourselves (no SB chain to delegate to)
             if (pick == null) return NextAction.TB_STOP;
             return NextAction.TB_RESTART;
         }
-        // SB paths (unchanged)
         if (pick == null) return endOfLibrary ? NextAction.STOP_END_OF_LIBRARY : NextAction.DELEGATE_SB;
         if (isRepeatNo) return NextAction.FORCE_PLAYNEXT;
         return NextAction.DELEGATE_SB;
@@ -399,15 +373,12 @@ public final class ServerPlaybackTracker {
         return sortedLibraryIds(null);
     }
 
-    /** Sort matches IM's own picker: melodies owned by `ownerPlayerName` first,
-     *  then datapack, then other players' uploads. Alphabetical within group.
-     *  Pass null on contexts without a player to get datapack-first ordering. */
     public static List<ResourceLocation> sortedLibraryIds(@Nullable String ownerPlayerName) {
         Set<ResourceLocation> ids = new HashSet<>();
         ids.addAll(ServerMelodyManager.getDatapackMelodies().keySet());
         try {
             ids.addAll(ServerMelodyManager.getIndex().getMelodies().keySet());
-        } catch (Throwable t) { /* index may not be initialized yet */ }
+        } catch (Throwable t) { }
         List<ResourceLocation> list = new ArrayList<>(ids);
         list.sort((a, b) -> {
             int sa = imSortIndex(a, ownerPlayerName);
@@ -434,7 +405,7 @@ public final class ServerPlaybackTracker {
         else { x = 0; y = 64; z = 0; }
         final double fx = x, fy = y, fz = z;
         ModNetwork.CHANNEL.send(
-                PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(fx, fy, fz, BROADCAST_RADIUS, s.level.dimension())),
+                PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(fx, fy, fz, 64, s.level.dimension())),
                 msg);
     }
 
@@ -448,7 +419,7 @@ public final class ServerPlaybackTracker {
         else { x = 0; y = 64; z = 0; }
         final double fx = x, fy = y, fz = z;
         ModNetwork.CHANNEL.send(
-                PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(fx, fy, fz, BROADCAST_RADIUS, level.dimension())),
+                PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(fx, fy, fz, 64, level.dimension())),
                 msg);
     }
 }

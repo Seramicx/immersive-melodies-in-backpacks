@@ -12,9 +12,6 @@ public final class PlaybackNbt {
     public static final String REPEAT = "bpmelodies:repeat";
     public static final String IM_ENABLED = "bpmelodies:im_enabled";
 
-    /** IM-mode toggle on the jukebox upgrade stack. Default ON. When OFF the
-     *  picker hides, slot-change auto-reload is suppressed, and the disc
-     *  handler short-circuits so SB treats the instrument as inert. */
     public static boolean isImEnabled(ItemStack upgradeStack) {
         if (upgradeStack.isEmpty()) return true;
         CompoundTag tag = upgradeStack.getTag();

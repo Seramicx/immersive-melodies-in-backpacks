@@ -9,8 +9,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Enlarges the jukebox tab when an instrument is in slot so all our buttons + the
- *  picker fit inside the tab bounds (rather than overflowing into the world). */
 @Mixin(value = UpgradeBase.class, remap = false)
 public abstract class TbTabSizeMixin {
     @Inject(method = "getTabSize", at = @At("RETURN"), cancellable = true)
@@ -19,7 +17,6 @@ public abstract class TbTabSizeMixin {
         if (!(self instanceof JukeboxUpgrade ju)) return;
         if (!ju.isTabOpened()) return;
         if (!JukeboxAccess.isInstrument(ju.diskHandler.getStackInSlot(0))) return;
-        // 105 wide × 140 tall: room for disk slot + 4 transport buttons + shuffle/repeat row + picker
         cir.setReturnValue(new Point(105, 140));
     }
 }
