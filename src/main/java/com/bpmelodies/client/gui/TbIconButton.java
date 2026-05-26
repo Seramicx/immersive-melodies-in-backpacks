@@ -45,12 +45,12 @@ public final class TbIconButton {
             case PLAY -> triangleRight(g, cx, cy, iconColor);
             case STOP -> g.fill(cx - 3, cy - 3, cx + 3, cy + 3, iconColor);
             case PREV -> {
-                g.fill(cx - 4, cy - 4, cx - 3, cy + 4, iconColor);
+                g.fill(cx - 4, cy - 4, cx - 3, cy + 5, iconColor);
                 triangleLeft(g, cx + 1, cy, iconColor);
             }
             case NEXT -> {
                 triangleRight(g, cx - 1, cy, iconColor);
-                g.fill(cx + 3, cy - 4, cx + 4, cy + 4, iconColor);
+                g.fill(cx + 3, cy - 4, cx + 4, cy + 5, iconColor);
             }
             case SHUFFLE_OFF -> blitIcon(g, SHUFFLE_OFF_TEX, bx, by, 0xFFFFFFFF);
             case SHUFFLE_ON  -> blitIcon(g, SHUFFLE_ON_TEX,  bx, by, 0xFFFFFFFF);

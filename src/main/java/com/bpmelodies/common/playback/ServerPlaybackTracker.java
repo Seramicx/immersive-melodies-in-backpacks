@@ -59,10 +59,7 @@ public final class ServerPlaybackTracker {
                 toStop.add(e.getKey());
             }
         }
-        if (toStop != null) for (UUID u : toStop) {
-            BpMelodiesMod.LOGGER.info("[tracker] TB upgrade ejected → stopping uuid={}", u);
-            stop(u);
-        }
+        if (toStop != null) for (UUID u : toStop) stop(u);
     }
 
     public static void stopSessionsForTbHandler(Object handler) {
@@ -73,10 +70,7 @@ public final class ServerPlaybackTracker {
                 toStop.add(e.getKey());
             }
         }
-        if (toStop != null) for (UUID u : toStop) {
-            BpMelodiesMod.LOGGER.info("[tracker] TB instrument removed → stopping uuid={}", u);
-            stop(u);
-        }
+        if (toStop != null) for (UUID u : toStop) stop(u);
     }
 
     private ServerPlaybackTracker() {}
@@ -123,10 +117,7 @@ public final class ServerPlaybackTracker {
     public static void start(ServerLevel level, UUID storageUuid, ItemStack instrumentStack,
                              ResourceLocation melodyId, ResourceLocation instrumentItemId,
                              @Nullable BlockPos pos, int entityId, @Nullable Runnable sbOnFinished) {
-        if (instrumentStack.isEmpty() || melodyId == null) {
-            BpMelodiesMod.LOGGER.info("[tracker] start ABORT empty={} melodyId={}", instrumentStack.isEmpty(), melodyId);
-            return;
-        }
+        if (instrumentStack.isEmpty() || melodyId == null) return;
         long len = lengthInTicksOrFallback(melodyId);
         if (len <= 0) {
             BpMelodiesMod.LOGGER.warn("[tracker] start ABORT zero-length melody={} len={}", melodyId, len);
@@ -134,7 +125,6 @@ public final class ServerPlaybackTracker {
         }
         long now = level.getGameTime();
         Session existing = SESSIONS.get(storageUuid);
-        boolean wasExisting = existing != null;
         if (existing != null) {
             existing.melodyId = melodyId;
             existing.startGameTime = now;
@@ -143,22 +133,14 @@ public final class ServerPlaybackTracker {
             SESSIONS.put(storageUuid, new Session(level, storageUuid, instrumentStack,
                     melodyId, instrumentItemId, pos, entityId, now, now + len, sbOnFinished));
         }
-        BpMelodiesMod.LOGGER.info("[tracker] start uuid={} melody={} len={} replacedExisting={} entityId={} pos={}",
-                storageUuid, melodyId, len, wasExisting, entityId, pos);
         broadcastStart(level, pos, entityId, storageUuid, instrumentItemId, melodyId, now);
     }
 
     public static void startFromAccess(Player player, JukeboxAccess access) {
         ItemStack instrument = access.firstInstrumentStack();
-        if (instrument == null) {
-            BpMelodiesMod.LOGGER.info("[tracker] startFromAccess BAIL — no instrument in slot for uuid={}", access.storageUuid());
-            return;
-        }
+        if (instrument == null) return;
         ResourceLocation melody = PlaybackNbt.getSelectedMelody(instrument);
-        if (melody == null) {
-            BpMelodiesMod.LOGGER.info("[tracker] startFromAccess BAIL — no selected_melody NBT on instrument for uuid={}", access.storageUuid());
-            return;
-        }
+        if (melody == null) return;
         ServerLevel level = (ServerLevel) player.level();
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(instrument.getItem());
         Entity bearer = access.bearerEntity();
@@ -172,7 +154,6 @@ public final class ServerPlaybackTracker {
     public static void stop(UUID storageUuid) {
         Session s = SESSIONS.remove(storageUuid);
         clearShuffleHistory(storageUuid);
-        BpMelodiesMod.LOGGER.info("[tracker] STOP called uuid={} hadSession={}", storageUuid, s != null);
         if (s == null) return;
         sendNear(s, new BackpackPlayStopMsg(storageUuid));
         if (BpMelodiesMod.SB_PRESENT) {
@@ -225,18 +206,14 @@ public final class ServerPlaybackTracker {
                     switch (action) {
                         case DELEGATE_SB -> {
                             if (s.sbOnFinished != null) {
-                                BpMelodiesMod.LOGGER.info("[tracker] invoking sbOnFinished for uuid={}", uuid);
                                 try { s.sbOnFinished.run(); }
-                                catch (Throwable t) { BpMelodiesMod.LOGGER.debug("sbOnFinished threw", t); }
-                            } else {
-                                BpMelodiesMod.LOGGER.info("[tracker] no sbOnFinished for uuid={} (TB session?)", uuid);
+                                catch (Throwable ignored) { }
                             }
                         }
                         case FORCE_PLAYNEXT -> {
                             var ref = WRAPPERS.get(uuid);
                             var wrapper = ref == null ? null : ref.get();
                             if (wrapper != null) {
-                                BpMelodiesMod.LOGGER.info("[tracker] forcing wrapper.playNext() for uuid={}", uuid);
                                 try { wrapper.playNext(); }
                                 catch (Throwable t) { BpMelodiesMod.LOGGER.warn("[tracker] forced playNext failed", t); }
                             }
@@ -244,26 +221,16 @@ public final class ServerPlaybackTracker {
                         case STOP_END_OF_LIBRARY -> {
                             var ref = WRAPPERS.get(uuid);
                             var wrapper = ref == null ? null : ref.get();
-                            if (wrapper != null) {
-                                BpMelodiesMod.LOGGER.info("[tracker] end of library — stopping wrapper isPlaying for uuid={}", uuid);
-                                invokeSetIsPlayingFalse(wrapper);
-                            }
+                            if (wrapper != null) invokeSetIsPlayingFalse(wrapper);
                         }
                         case TB_RESTART -> {
                             JukeboxAccess access = TB_ACCESS.get(uuid);
                             if (access != null) {
                                 Player p = (s.entityId >= 0 && s.level.getEntity(s.entityId) instanceof Player pl) ? pl : null;
-                                if (p != null) {
-                                    BpMelodiesMod.LOGGER.info("[tracker] TB autoplay restart uuid={}", uuid);
-                                    startFromAccess(p, access);
-                                } else {
-                                    BpMelodiesMod.LOGGER.info("[tracker] TB autoplay skipped — no player online for uuid={}", uuid);
-                                }
+                                if (p != null) startFromAccess(p, access);
                             }
                         }
-                        case TB_STOP -> {
-                            BpMelodiesMod.LOGGER.info("[tracker] TB end of library — stop uuid={}", uuid);
-                        }
+                        case TB_STOP -> { }
                     }
                 }
             }
@@ -285,12 +252,10 @@ public final class ServerPlaybackTracker {
         if (isSb) {
             shuffle = wrapper.isShuffleEnabled();
             sbRep = wrapper.getRepeatMode();
-            BpMelodiesMod.LOGGER.info("[tracker] session end (SB) uuid={} shuffle={} repeat={}", uuid, shuffle, sbRep);
         } else if (tbAccess != null) {
             ItemStack up = tbAccess.upgradeStack();
             shuffle = PlaybackNbt.getShuffle(up);
             tbRep = PlaybackNbt.getRepeat(up);
-            BpMelodiesMod.LOGGER.info("[tracker] session end (TB) uuid={} shuffle={} repeat={}", uuid, shuffle, tbRep);
         } else {
             return NextAction.DELEGATE_SB;
         }
@@ -335,7 +300,6 @@ public final class ServerPlaybackTracker {
         if (pick != null && !pick.equals(cur)) {
             PlaybackNbt.setSelectedMelody(s.instrumentStack, pick);
             if (!isSb && tbAccess != null) tbAccess.markDiscSlotDirty(tbAccess.findInstrumentSlot());
-            BpMelodiesMod.LOGGER.info("[tracker] advanced melody: {} -> {}", cur, pick);
         }
 
         if (!isSb) {

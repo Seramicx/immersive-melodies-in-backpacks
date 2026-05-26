@@ -22,7 +22,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -36,8 +35,6 @@ public abstract class JukeboxUpgradeWrapperMixin {
     @Shadow(remap = false) public abstract boolean isPlaying();
 
     private static Field BPM$STORAGE_WRAPPER_FIELD;
-    private static Method BPM$SET_IS_PLAYING_METHOD;
-    private static Method BPM$PLAY_NEXT_METHOD;
     private static final Random BPM$RANDOM = new Random();
 
     @Inject(method = "stop", at = @At("HEAD"), remap = false)
@@ -59,18 +56,18 @@ public abstract class JukeboxUpgradeWrapperMixin {
     private void bpm$filterPlaylistIfImOn(String origin) {
         try {
             ItemStack upgradeStack = ((UpgradeWrapperBase<?, ?>) (Object) this).getUpgradeStack();
-            if (!PlaybackNbt.isImEnabled(upgradeStack)) return;
+            boolean imOn = PlaybackNbt.isImEnabled(upgradeStack);
             LinkedList<Integer> playlist = bpm$getPlaylist();
             net.minecraftforge.items.ItemStackHandler inv = bpm$getDiscInventory();
             if (playlist == null || inv == null || playlist.isEmpty()) return;
             LinkedList<Integer> filtered = new LinkedList<>();
             for (Integer slot : playlist) {
-                if (JukeboxAccess.isInstrument(inv.getStackInSlot(slot))) filtered.add(slot);
+                boolean isInst = JukeboxAccess.isInstrument(inv.getStackInSlot(slot));
+                if (imOn == isInst) filtered.add(slot);
             }
             if (filtered.size() != playlist.size()) {
                 playlist.clear();
                 playlist.addAll(filtered);
-                com.bpmelodies.BpMelodiesMod.LOGGER.info("[wrapper-mixin] IM-mode filter via {} → {} instrument slot(s)", origin, filtered.size());
             }
         } catch (Throwable t) {
             com.bpmelodies.BpMelodiesMod.LOGGER.warn("[wrapper-mixin] playlist filter failed", t);
@@ -180,9 +177,6 @@ public abstract class JukeboxUpgradeWrapperMixin {
             }
         }
 
-        com.bpmelodies.BpMelodiesMod.LOGGER.info("[wrapper-mixin] skip dir={} shuffle={} repeat={} cur={} -> pick={} stopAtEdge={}",
-                dir, shuffle, rep, cur, pick, stopAtEdge);
-
         if (pick != null) {
             PlaybackNbt.setSelectedMelody(disc, pick);
             try { self.playNext(); }
@@ -219,26 +213,6 @@ public abstract class JukeboxUpgradeWrapperMixin {
 
     private static Field BPM$ENTITY_PLAYING_FIELD;
 
-    private void bpm$invokeSetIsPlaying(boolean playing) {
-        try {
-            if (BPM$SET_IS_PLAYING_METHOD == null) {
-                BPM$SET_IS_PLAYING_METHOD = JukeboxUpgradeWrapper.class.getDeclaredMethod("setIsPlaying", boolean.class);
-                BPM$SET_IS_PLAYING_METHOD.setAccessible(true);
-            }
-            BPM$SET_IS_PLAYING_METHOD.invoke(this, playing);
-        } catch (Throwable ignored) { }
-    }
-
-    private void bpm$invokePlayNext() {
-        try {
-            if (BPM$PLAY_NEXT_METHOD == null) {
-                BPM$PLAY_NEXT_METHOD = JukeboxUpgradeWrapper.class.getDeclaredMethod("playNext");
-                BPM$PLAY_NEXT_METHOD.setAccessible(true);
-            }
-            BPM$PLAY_NEXT_METHOD.invoke(this);
-        } catch (Throwable ignored) { }
-    }
-
     private void bpm$tellTracker() {
         try {
             if (BPM$STORAGE_WRAPPER_FIELD == null) {
@@ -250,17 +224,4 @@ public abstract class JukeboxUpgradeWrapperMixin {
         } catch (Exception ignored) { }
     }
 
-    private ResourceLocation bpm$advanceLibrary(ResourceLocation current, int delta) {
-        List<ResourceLocation> all = ServerPlaybackTracker.sortedLibraryIds();
-        if (all.isEmpty()) return null;
-        int idx = current == null ? -1 : all.indexOf(current);
-        int next = Math.floorMod((idx < 0 ? 0 : idx + delta), all.size());
-        return all.get(next);
-    }
-
-    private ResourceLocation bpm$pickRandom() {
-        List<ResourceLocation> all = ServerPlaybackTracker.sortedLibraryIds();
-        if (all.isEmpty()) return null;
-        return all.get(BPM$RANDOM.nextInt(all.size()));
-    }
 }

@@ -56,6 +56,8 @@ public abstract class TbJukeboxWidgetMixin {
         g.fill(sx, sy, sx + 1, sy + 18, 0xFF373737);
         g.fill(sx, sy + 17, sx + 18, sy + 18, 0xFFFFFFFF);
         g.fill(sx + 17, sy, sx + 18, sy + 18, 0xFFFFFFFF);
+        g.fill(sx, sy + 17, sx + 1, sy + 18, 0xFF8B8B8B);
+        g.fill(sx + 17, sy, sx + 18, sy + 1, 0xFF8B8B8B);
     }
 
     @Unique
@@ -158,7 +160,6 @@ public abstract class TbJukeboxWidgetMixin {
         else if (bpm$hit(mouseX, mouseY, x + 61, y + 41)) op = SetTransportFlagMsg.Op.CYCLE_REPEAT;
 
         if (op != null) {
-            com.bpmelodies.BpMelodiesMod.LOGGER.info("[tb-click] button={} at mouse=({},{}) widget=({},{})", op, mouseX, mouseY, x, y);
             ModNetwork.CHANNEL.sendToServer(new SetTransportFlagMsg(op, 0));
             Minecraft.getInstance().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
             cir.setReturnValue(true);

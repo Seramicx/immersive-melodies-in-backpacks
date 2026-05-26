@@ -49,9 +49,6 @@ public final class SbTabPickerAttacher {
             int wWith = after.width();
             SIZES.put(tab, new int[]{wWithout, hWithout, wWith, hToggleOnly, hFull});
             HIDE_TOGGLE.put(tab, hideToggle);
-            BpMelodiesMod.LOGGER.info("[attacher] attached picker to tab id={} cls={} hideToggle={} pos=({},{}) sizes empty=[{},{}] toggleOnly=[{},{}] full=[{},{}]",
-                    System.identityHashCode(tab), tab.getClass().getSimpleName(), hideToggle,
-                    tab.getX(), tab.getY(), wWithout, hWithout, wWith, hToggleOnly, wWith, hFull);
         } catch (Throwable t) {
             BpMelodiesMod.LOGGER.warn("[bpmelodies] Failed to attach MelodyPicker to SB jukebox tab", t);
         }

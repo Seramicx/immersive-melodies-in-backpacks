@@ -29,7 +29,6 @@ public record SetTransportFlagMsg(Op op, int value) {
         Player player = ctx.get().getSender();
         if (player == null) return;
         JukeboxAccess.findJukeboxInOpenMenu(player).ifPresent(access -> {
-            com.bpmelodies.BpMelodiesMod.LOGGER.info("[transport] op={} player={} access={}", msg.op, player.getName().getString(), access.storageUuid());
             switch (msg.op) {
                 case PLAY -> ServerPlaybackTracker.startFromAccess(player, access);
                 case STOP -> ServerPlaybackTracker.stop(access.storageUuid());

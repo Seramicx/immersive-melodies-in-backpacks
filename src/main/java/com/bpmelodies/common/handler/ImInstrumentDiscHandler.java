@@ -35,12 +35,8 @@ public class ImInstrumentDiscHandler implements IDiscHandler<MelodyDescriptor> {
 
     @Override
     public void playDisc(ServerLevel serverLevel, BlockPos position, UUID storageUuid, ItemStack discItemStack, Runnable onFinished) {
-        if (!isImEnabledFor(storageUuid)) {
-            com.bpmelodies.BpMelodiesMod.LOGGER.info("[handler] playDisc (block) skipped — IM disabled for {}", storageUuid);
-            return;
-        }
+        if (!isImEnabledFor(storageUuid)) return;
         ResourceLocation rl = PlaybackNbt.getSelectedMelody(discItemStack);
-        com.bpmelodies.BpMelodiesMod.LOGGER.info("[handler] playDisc (block) storageUuid={} melody={}", storageUuid, rl);
         if (rl == null) return;
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(discItemStack.getItem());
         keepSbAlive(serverLevel, position, storageUuid);
@@ -49,12 +45,8 @@ public class ImInstrumentDiscHandler implements IDiscHandler<MelodyDescriptor> {
 
     @Override
     public void playDisc(ServerLevel serverLevel, Vec3 position, UUID storageUuid, ItemStack discItemStack, int entityId, Runnable onFinished) {
-        if (!isImEnabledFor(storageUuid)) {
-            com.bpmelodies.BpMelodiesMod.LOGGER.info("[handler] playDisc (entity) skipped — IM disabled for {}", storageUuid);
-            return;
-        }
+        if (!isImEnabledFor(storageUuid)) return;
         ResourceLocation rl = PlaybackNbt.getSelectedMelody(discItemStack);
-        com.bpmelodies.BpMelodiesMod.LOGGER.info("[handler] playDisc (entity) storageUuid={} entityId={} melody={}", storageUuid, entityId, rl);
         if (rl == null) return;
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(discItemStack.getItem());
         keepSbAlive(serverLevel, BlockPos.containing(position), storageUuid);
