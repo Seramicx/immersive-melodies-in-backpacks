@@ -34,10 +34,8 @@ public record RequestMelodyListMsg() {
             try {
                 ServerMelodyManager.getIndex().getMelodies().forEach((id, desc) ->
                         melodies.put(id, desc.getName()));
-            } catch (Throwable t) {
-                BpMelodiesMod.LOGGER.info("[bpmelodies] Index not initialized yet for {} — sending {} datapack melodies only", player.getGameProfile().getName(), melodies.size());
+            } catch (Throwable ignored) {
             }
-            BpMelodiesMod.LOGGER.info("[bpmelodies] Pushing {} melodies to {}", melodies.size(), player.getGameProfile().getName());
             ModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
                     new MelodyLibrarySyncMsg(melodies));
         } catch (Throwable t) {

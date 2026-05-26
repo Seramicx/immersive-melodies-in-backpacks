@@ -31,7 +31,6 @@ public abstract class JukeboxContainerSlotMixin extends SlotItemHandler {
     private void bpm$skipStopForInstrument(CallbackInfo ci) {
         ItemStack disc = getItem();
         if (JukeboxAccess.isInstrument(disc)) {
-            com.bpmelodies.BpMelodiesMod.LOGGER.info("[slot-mixin] skipping wrapper.stop on instrument NBT change slot={}", getSlotIndex());
             ci.cancel();
         }
     }
@@ -54,7 +53,6 @@ public abstract class JukeboxContainerSlotMixin extends SlotItemHandler {
             if (wantOn == isOn) return;
             PlaybackNbt.setImEnabled(upgradeStack, wantOn);
             bpm$saveUpgrade(wrapper, upgradeStack);
-            com.bpmelodies.BpMelodiesMod.LOGGER.info("[slot-mixin] Basic auto-IM: {} -> {}", isOn, wantOn);
             if (!wantOn) {
                 IStorageWrapper sw = bpm$getStorageWrapper(wrapper);
                 if (sw != null) sw.getContentsUuid().ifPresent(ServerPlaybackTracker::stop);

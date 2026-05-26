@@ -33,11 +33,7 @@ public class BackpackPlaybackSession {
     @Nullable private InstrumentItem resolvedInstrument;
     private final Map<Integer, Integer> lastNoteIndex = new HashMap<>();
     private final List<CancelableSoundInstance> activeNotes = new ArrayList<>();
-    private int notesPlayedTotal = 0;
     private int tickCount = 0;
-    private boolean loggedResolvedOnce = false;
-    private boolean loggedNoEntityOnce = false;
-    private boolean loggedTooFarOnce = false;
 
     public BackpackPlaybackSession(UUID storageUuid, ResourceLocation instrumentItemId,
                                    ResourceLocation melodyId, long startGameTime,
@@ -58,15 +54,8 @@ public class BackpackPlaybackSession {
 
     public void tick() {
         tickCount++;
-        if (tickCount == 1) {
-            com.bpmelodies.BpMelodiesMod.LOGGER.info("[playback-session] tick #1 ENTRY uuid={} melody={} startGT={} sourceEid={} instance={}",
-                    storageUuid, melodyId, startGameTime, sourceEntityId, System.identityHashCode(this));
-        }
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null || mc.player == null) {
-            if (tickCount == 1) com.bpmelodies.BpMelodiesMod.LOGGER.info("[playback-session] tick #1 EXIT level/player null");
-            return;
-        }
+        if (mc.level == null || mc.player == null) return;
 
         if (resolvedInstrument == null) {
             Item it = BuiltInRegistries.ITEM.get(instrumentItemId);
@@ -75,41 +64,20 @@ public class BackpackPlaybackSession {
         }
         if (resolvedMelody == null || resolvedMelody.getLength() <= 0) {
             Melody m = ClientMelodyManager.getMelody(melodyId);
-            if (m.getLength() <= 0) {
-                if (tickCount == 1 || tickCount % 40 == 0) {
-                    com.bpmelodies.BpMelodiesMod.LOGGER.info("[playback-session] tick #{} melody not loaded yet melody={}", tickCount, melodyId);
-                }
-                return;
-            }
+            if (m.getLength() <= 0) return;
             resolvedMelody = m;
-            com.bpmelodies.BpMelodiesMod.LOGGER.info("[playback-session] tick #{} RESOLVED melody={} length={} tracks={}",
-                    tickCount, melodyId, resolvedMelody.getLength(), resolvedMelody.getTracks().size());
-            loggedResolvedOnce = true;
         }
 
         Entity source = sourceEntityId >= 0 ? mc.level.getEntity(sourceEntityId) : null;
-        if (source == null) {
-            if (!loggedNoEntityOnce) {
-                com.bpmelodies.BpMelodiesMod.LOGGER.info("[playback-session] tick #{} no source entity (id={}), falling back to player", tickCount, sourceEntityId);
-                loggedNoEntityOnce = true;
-            }
-            source = mc.player;
-        }
+        if (source == null) source = mc.player;
         double dx = source.getX() - mc.player.getX();
         double dy = source.getY() - mc.player.getY();
         double dz = source.getZ() - mc.player.getZ();
-        if (dx * dx + dy * dy + dz * dz > 96 * 96) {
-            if (!loggedTooFarOnce) {
-                com.bpmelodies.BpMelodiesMod.LOGGER.info("[playback-session] tick #{} too far from source — skipping", tickCount);
-                loggedTooFarOnce = true;
-            }
-            return;
-        }
+        if (dx * dx + dy * dy + dz * dz > 96 * 96) return;
 
         long elapsedMs = (mc.level.getGameTime() - startGameTime) * 50L;
 
         List<Track> tracks = resolvedMelody.getTracks();
-        int playedThisTick = 0;
         for (int t = 0; t < tracks.size(); t++) {
             List<Note> notes = tracks.get(t).getNotes();
             int idx = lastNoteIndex.getOrDefault(t, 0);
@@ -119,8 +87,6 @@ public class BackpackPlaybackSession {
                     try {
                         CancelableSoundInstance si = resolvedInstrument.playNote(source, n, elapsedMs);
                         if (si != null) activeNotes.add(si);
-                        playedThisTick++;
-                        notesPlayedTotal++;
                     } catch (Throwable t2) {
                         com.bpmelodies.BpMelodiesMod.LOGGER.warn("[playback-session] playNote threw", t2);
                     }
@@ -130,10 +96,6 @@ public class BackpackPlaybackSession {
                     break;
                 }
             }
-        }
-        if (notesPlayedTotal > 0 && notesPlayedTotal - playedThisTick == 0) {
-            com.bpmelodies.BpMelodiesMod.LOGGER.info("[playback-session] FIRST notes played: tick #{} count={} elapsedMs={} source={}",
-                    tickCount, playedThisTick, elapsedMs, source.getClass().getSimpleName());
         }
     }
 
@@ -148,6 +110,4 @@ public class BackpackPlaybackSession {
         cancelActive();
     }
 
-    @SuppressWarnings("unused")
-    public ItemStack debugStack() { return ItemStack.EMPTY; }
 }

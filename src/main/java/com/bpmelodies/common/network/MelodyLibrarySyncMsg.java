@@ -34,7 +34,6 @@ public record MelodyLibrarySyncMsg(Map<ResourceLocation, String> melodies) {
     public static void handle(MelodyLibrarySyncMsg msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().setPacketHandled(true);
         ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-            com.bpmelodies.BpMelodiesMod.LOGGER.info("[bpmelodies] Client received {} melodies", msg.melodies.size());
             Map<ResourceLocation, MelodyDescriptor> dst = ClientMelodyManager.getMelodiesList();
             dst.clear();
             for (Map.Entry<ResourceLocation, String> e : msg.melodies.entrySet()) {
