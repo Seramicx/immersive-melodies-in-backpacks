@@ -10,11 +10,11 @@ public final class TbIconButton {
     public enum Icon { PREV, STOP, PLAY, NEXT, SHUFFLE_OFF, SHUFFLE_ON, REPEAT_OFF, REPEAT_ONE, REPEAT_ALL }
 
     public static final int SIZE = 18;
-    private static final ResourceLocation SHUFFLE_OFF_TEX = new ResourceLocation("bpmelodies", "textures/gui/shuffle_off.png");
-    private static final ResourceLocation SHUFFLE_ON_TEX = new ResourceLocation("bpmelodies", "textures/gui/shuffle_on.png");
-    private static final ResourceLocation REPEAT_OFF_TEX = new ResourceLocation("bpmelodies", "textures/gui/repeat_off.png");
-    private static final ResourceLocation REPEAT_ALL_TEX = new ResourceLocation("bpmelodies", "textures/gui/repeat_all.png");
-    private static final ResourceLocation REPEAT_ONE_TEX = new ResourceLocation("bpmelodies", "textures/gui/repeat_one.png");
+    private static final ResourceLocation SHUFFLE_OFF_TEX = ResourceLocation.fromNamespaceAndPath("bpmelodies", "textures/gui/shuffle_off.png");
+    private static final ResourceLocation SHUFFLE_ON_TEX = ResourceLocation.fromNamespaceAndPath("bpmelodies", "textures/gui/shuffle_on.png");
+    private static final ResourceLocation REPEAT_OFF_TEX = ResourceLocation.fromNamespaceAndPath("bpmelodies", "textures/gui/repeat_off.png");
+    private static final ResourceLocation REPEAT_ALL_TEX = ResourceLocation.fromNamespaceAndPath("bpmelodies", "textures/gui/repeat_all.png");
+    private static final ResourceLocation REPEAT_ONE_TEX = ResourceLocation.fromNamespaceAndPath("bpmelodies", "textures/gui/repeat_one.png");
 
     private TbIconButton() {}
 

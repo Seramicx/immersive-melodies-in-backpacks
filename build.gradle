@@ -1,10 +1,6 @@
 plugins {
-    id 'eclipse'
     id 'idea'
-    id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
-    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
-    id 'org.spongepowered.mixin' version '0.7.+'
+    id 'net.neoforged.moddev' version '1.0.14'
 }
 
 version = mod_version
@@ -14,43 +10,29 @@ base {
     archivesName = mod_id
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-minecraft {
-    mappings channel: mapping_channel, version: mapping_version
-    copyIdeResources = true
+neoForge {
+    version = neoforge_version
+    parchment {
+        mappingsVersion = mapping_version
+        minecraftVersion = mapping_mc_version
+    }
 
     runs {
-        configureEach {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
-            arg '-mixin.config=bpmelodies-sb.mixins.json'
-            arg '-mixin.config=bpmelodies-tb.mixins.json'
-
-            mods {
-                "${mod_id}" {
-                    source sourceSets.main
-                }
-            }
-        }
-
         client {
-            property 'forge.enabledGameTestNamespaces', mod_id
+            client()
         }
-
         server {
-            property 'forge.enabledGameTestNamespaces', mod_id
+            server()
         }
     }
-}
 
-mixin {
-    add sourceSets.main, "bpmelodies.refmap.json"
-    config "bpmelodies-sb.mixins.json"
-    config "bpmelodies-tb.mixins.json"
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
 }
 
 repositories {
@@ -59,50 +41,25 @@ repositories {
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-
-    // Sophisticated Backpacks (1.20.1-3.24.39.1743)
-    compileOnly fg.deobf("maven.modrinth:sophisticated-backpacks:zW3DArlQ")
-    // Sophisticated Core (1.20.1-1.3.35.1851) — IDiscHandler API
-    compileOnly fg.deobf("maven.modrinth:sophisticated-core:KfjBOAgs")
-    // Traveler's Backpack (1.20.1-9.1.54)
-    compileOnly fg.deobf("maven.modrinth:travelersbackpack:uEKiccam")
-    // Immersive Melodies (0.6.1+1.20.1)
-    compileOnly fg.deobf("maven.modrinth:immersive-melodies:oF0sGcRh")
-
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    compileOnly "maven.modrinth:sophisticated-backpacks:1.21.1-3.25.49.1791"
+    compileOnly "maven.modrinth:sophisticated-core:1.21.1-1.4.42.1892"
+    compileOnly "maven.modrinth:travelersbackpack:1.21.1-10.1.36"
+    compileOnly "maven.modrinth:immersive-melodies:FRJWinhs"
 }
 
 tasks.named('processResources', ProcessResources).configure {
     var replaceProperties = [
             minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
-            forge_version: forge_version, forge_version_range: forge_version_range,
+            neoforge_version: neoforge_version, neoforge_version_range: neoforge_version_range,
             loader_version_range: loader_version_range,
             mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
             mod_authors: mod_authors, mod_description: mod_description,
     ]
     inputs.properties replaceProperties
 
-    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+    filesMatching(['META-INF/neoforge.mods.toml', 'pack.mcmeta']) {
         expand replaceProperties + [project: project]
     }
-}
-
-tasks.named('jar', Jar).configure {
-    manifest {
-        attributes([
-                'Specification-Title'     : mod_id,
-                'Specification-Vendor'    : mod_authors,
-                'Specification-Version'   : '1',
-                'Implementation-Title'    : project.name,
-                'Implementation-Version'  : project.jar.archiveVersion,
-                'Implementation-Vendor'   : mod_authors,
-                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-                'MixinConfigs'            : 'bpmelodies-sb.mixins.json,bpmelodies-tb.mixins.json'
-        ])
-    }
-
-    finalizedBy 'reobfJar'
 }
 
 tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }

@@ -2,27 +2,29 @@ package com.bpmelodies.common.network;
 
 import com.bpmelodies.BpMelodiesMod;
 import immersive_melodies.resources.ServerMelodyManager;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
-public record RequestMelodyListMsg() {
-    public static void encode(RequestMelodyListMsg msg, FriendlyByteBuf buf) {}
+public record RequestMelodyListMsg() implements CustomPacketPayload {
+    public static final Type<RequestMelodyListMsg> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(BpMelodiesMod.MODID, "req_melodies"));
 
-    public static RequestMelodyListMsg decode(FriendlyByteBuf buf) {
-        return new RequestMelodyListMsg();
-    }
+    public static final StreamCodec<RegistryFriendlyByteBuf, RequestMelodyListMsg> STREAM_CODEC =
+            StreamCodec.of((buf, msg) -> {}, buf -> new RequestMelodyListMsg());
 
-    public static void handle(RequestMelodyListMsg msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().setPacketHandled(true);
-        ServerPlayer player = ctx.get().getSender();
-        if (player == null) return;
+    @Override
+    public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+    public static void handle(RequestMelodyListMsg msg, IPayloadContext ctx) {
+        if (!(ctx.player() instanceof ServerPlayer player)) return;
         sendLibraryTo(player);
     }
 
@@ -36,8 +38,7 @@ public record RequestMelodyListMsg() {
                         melodies.put(id, desc.getName()));
             } catch (Throwable ignored) {
             }
-            ModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-                    new MelodyLibrarySyncMsg(melodies));
+            PacketDistributor.sendToPlayer(player, new MelodyLibrarySyncMsg(melodies));
         } catch (Throwable t) {
             BpMelodiesMod.LOGGER.warn("[bpmelodies] Failed to push melody library to {}", player.getGameProfile().getName(), t);
         }

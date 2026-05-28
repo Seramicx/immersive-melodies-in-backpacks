@@ -1,8 +1,10 @@
 package com.bpmelodies.common.playback;
 
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 
 import javax.annotation.Nullable;
 
@@ -14,14 +16,14 @@ public final class PlaybackNbt {
 
     public static boolean isImEnabled(ItemStack upgradeStack) {
         if (upgradeStack.isEmpty()) return true;
-        CompoundTag tag = upgradeStack.getTag();
-        if (tag == null || !tag.contains(IM_ENABLED)) return true;
+        CompoundTag tag = upgradeStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (!tag.contains(IM_ENABLED)) return true;
         return tag.getBoolean(IM_ENABLED);
     }
 
     public static void setImEnabled(ItemStack upgradeStack, boolean enabled) {
         if (upgradeStack.isEmpty()) return;
-        upgradeStack.getOrCreateTag().putBoolean(IM_ENABLED, enabled);
+        upgradeStack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, d -> d.update(tag -> tag.putBoolean(IM_ENABLED, enabled)));
     }
 
     private PlaybackNbt() {}
@@ -29,10 +31,10 @@ public final class PlaybackNbt {
     @Nullable
     public static ResourceLocation getSelectedMelody(ItemStack stack) {
         if (stack.isEmpty()) return null;
-        CompoundTag tag = stack.getTag();
-        if (tag == null || !tag.contains(SELECTED_MELODY)) return null;
+        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (!tag.contains(SELECTED_MELODY)) return null;
         try {
-            return new ResourceLocation(tag.getString(SELECTED_MELODY));
+            return ResourceLocation.parse(tag.getString(SELECTED_MELODY));
         } catch (Exception e) {
             return null;
         }
@@ -41,9 +43,9 @@ public final class PlaybackNbt {
     public static void setSelectedMelody(ItemStack stack, @Nullable ResourceLocation rl) {
         if (stack.isEmpty()) return;
         if (rl == null) {
-            if (stack.getTag() != null) stack.getTag().remove(SELECTED_MELODY);
+            stack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, d -> d.update(tag -> tag.remove(SELECTED_MELODY)));
         } else {
-            stack.getOrCreateTag().putString(SELECTED_MELODY, rl.toString());
+            stack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, d -> d.update(tag -> tag.putString(SELECTED_MELODY, rl.toString())));
         }
     }
 
@@ -61,19 +63,19 @@ public final class PlaybackNbt {
 
     public static boolean getShuffle(ItemStack upgradeStack) {
         if (upgradeStack.isEmpty()) return false;
-        CompoundTag tag = upgradeStack.getTag();
-        return tag != null && tag.getBoolean(SHUFFLE);
+        CompoundTag tag = upgradeStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        return tag.getBoolean(SHUFFLE);
     }
 
     public static void setShuffle(ItemStack upgradeStack, boolean shuffle) {
         if (upgradeStack.isEmpty()) return;
-        upgradeStack.getOrCreateTag().putBoolean(SHUFFLE, shuffle);
+        upgradeStack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, d -> d.update(tag -> tag.putBoolean(SHUFFLE, shuffle)));
     }
 
     public static RepeatMode getRepeat(ItemStack upgradeStack) {
         if (upgradeStack.isEmpty()) return RepeatMode.NO;
-        CompoundTag tag = upgradeStack.getTag();
-        if (tag == null || !tag.contains(REPEAT)) return RepeatMode.NO;
+        CompoundTag tag = upgradeStack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (!tag.contains(REPEAT)) return RepeatMode.NO;
         try {
             return RepeatMode.valueOf(tag.getString(REPEAT));
         } catch (IllegalArgumentException e) {
@@ -83,6 +85,6 @@ public final class PlaybackNbt {
 
     public static void setRepeat(ItemStack upgradeStack, RepeatMode mode) {
         if (upgradeStack.isEmpty()) return;
-        upgradeStack.getOrCreateTag().putString(REPEAT, mode.name());
+        upgradeStack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, d -> d.update(tag -> tag.putString(REPEAT, mode.name())));
     }
 }

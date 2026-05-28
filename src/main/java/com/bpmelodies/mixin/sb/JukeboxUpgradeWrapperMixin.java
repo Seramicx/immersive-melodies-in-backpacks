@@ -58,7 +58,7 @@ public abstract class JukeboxUpgradeWrapperMixin {
             ItemStack upgradeStack = ((UpgradeWrapperBase<?, ?>) (Object) this).getUpgradeStack();
             boolean imOn = PlaybackNbt.isImEnabled(upgradeStack);
             LinkedList<Integer> playlist = bpm$getPlaylist();
-            net.minecraftforge.items.ItemStackHandler inv = bpm$getDiscInventory();
+            net.neoforged.neoforge.items.IItemHandler inv = bpm$getDiscInventory();
             if (playlist == null || inv == null || playlist.isEmpty()) return;
             LinkedList<Integer> filtered = new LinkedList<>();
             for (Integer slot : playlist) {
@@ -86,12 +86,12 @@ public abstract class JukeboxUpgradeWrapperMixin {
         return (LinkedList<Integer>) BPM$PLAYLIST_FIELD.get(this);
     }
 
-    private net.minecraftforge.items.ItemStackHandler bpm$getDiscInventory() throws Exception {
+    private net.neoforged.neoforge.items.IItemHandler bpm$getDiscInventory() throws Exception {
         if (BPM$DISC_INVENTORY_FIELD == null) {
             BPM$DISC_INVENTORY_FIELD = JukeboxUpgradeWrapper.class.getDeclaredField("discInventory");
             BPM$DISC_INVENTORY_FIELD.setAccessible(true);
         }
-        return (net.minecraftforge.items.ItemStackHandler) BPM$DISC_INVENTORY_FIELD.get(this);
+        return (net.neoforged.neoforge.items.IItemHandler) BPM$DISC_INVENTORY_FIELD.get(this);
     }
 
     @Inject(method = "play(Lnet/minecraft/world/entity/Entity;)V", at = @At("HEAD"), remap = false)

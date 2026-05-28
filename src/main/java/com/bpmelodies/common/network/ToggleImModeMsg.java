@@ -1,28 +1,32 @@
 package com.bpmelodies.common.network;
 
+import com.bpmelodies.BpMelodiesMod;
 import com.bpmelodies.common.handler.JukeboxAccess;
 import com.bpmelodies.common.playback.PlaybackNbt;
 import com.bpmelodies.common.playback.ServerPlaybackTracker;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.function.Supplier;
+public record ToggleImModeMsg(boolean enabled) implements CustomPacketPayload {
+    public static final Type<ToggleImModeMsg> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(BpMelodiesMod.MODID, "toggle_im"));
 
-public record ToggleImModeMsg(boolean enabled) {
-    public static void encode(ToggleImModeMsg m, FriendlyByteBuf buf) {
-        buf.writeBoolean(m.enabled);
-    }
+    public static final StreamCodec<RegistryFriendlyByteBuf, ToggleImModeMsg> STREAM_CODEC =
+            StreamCodec.of(
+                    (buf, m) -> buf.writeBoolean(m.enabled),
+                    buf -> new ToggleImModeMsg(buf.readBoolean())
+            );
 
-    public static ToggleImModeMsg decode(FriendlyByteBuf buf) {
-        return new ToggleImModeMsg(buf.readBoolean());
-    }
+    @Override
+    public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
-    public static void handle(ToggleImModeMsg msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().setPacketHandled(true);
-        Player player = ctx.get().getSender();
-        if (player == null) return;
-        JukeboxAccess.findJukeboxInOpenMenu(player).ifPresent(access -> {
+    public static void handle(ToggleImModeMsg msg, IPayloadContext ctx) {
+        if (!(ctx.player() instanceof ServerPlayer)) return;
+        JukeboxAccess.findJukeboxInOpenMenu(ctx.player()).ifPresent(access -> {
             PlaybackNbt.setImEnabled(access.upgradeStack(), msg.enabled);
             access.markUpgradeDirty();
             if (!msg.enabled) {

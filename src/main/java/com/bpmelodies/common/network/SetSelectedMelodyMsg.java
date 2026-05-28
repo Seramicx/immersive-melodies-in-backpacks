@@ -1,28 +1,31 @@
 package com.bpmelodies.common.network;
 
+import com.bpmelodies.BpMelodiesMod;
 import com.bpmelodies.common.handler.JukeboxAccess;
 import com.bpmelodies.common.playback.PlaybackNbt;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.function.Supplier;
+public record SetSelectedMelodyMsg(ResourceLocation melody) implements CustomPacketPayload {
+    public static final Type<SetSelectedMelodyMsg> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(BpMelodiesMod.MODID, "set_melody"));
 
-public record SetSelectedMelodyMsg(ResourceLocation melody) {
-    public static void encode(SetSelectedMelodyMsg msg, FriendlyByteBuf buf) {
-        buf.writeResourceLocation(msg.melody);
-    }
+    public static final StreamCodec<RegistryFriendlyByteBuf, SetSelectedMelodyMsg> STREAM_CODEC =
+            StreamCodec.of(
+                    (buf, msg) -> buf.writeResourceLocation(msg.melody),
+                    buf -> new SetSelectedMelodyMsg(buf.readResourceLocation())
+            );
 
-    public static SetSelectedMelodyMsg decode(FriendlyByteBuf buf) {
-        return new SetSelectedMelodyMsg(buf.readResourceLocation());
-    }
+    @Override
+    public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
-    public static void handle(SetSelectedMelodyMsg msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().setPacketHandled(true);
-        Player player = ctx.get().getSender();
-        if (player == null) return;
+    public static void handle(SetSelectedMelodyMsg msg, IPayloadContext ctx) {
+        if (!(ctx.player() instanceof ServerPlayer player)) return;
         JukeboxAccess.findJukeboxInOpenMenu(player).ifPresent(access -> {
             int slot = access.findInstrumentSlot();
             if (slot < 0) return;

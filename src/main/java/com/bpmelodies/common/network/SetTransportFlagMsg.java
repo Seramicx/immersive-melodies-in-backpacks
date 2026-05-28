@@ -1,33 +1,38 @@
 package com.bpmelodies.common.network;
 
+import com.bpmelodies.BpMelodiesMod;
 import com.bpmelodies.common.handler.JukeboxAccess;
 import com.bpmelodies.common.playback.PlaybackNbt;
 import com.bpmelodies.common.playback.ServerPlaybackTracker;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.List;
-import java.util.function.Supplier;
 
-public record SetTransportFlagMsg(Op op, int value) {
+public record SetTransportFlagMsg(Op op, int value) implements CustomPacketPayload {
     public enum Op { PLAY, STOP, NEXT, PREV, TOGGLE_SHUFFLE, CYCLE_REPEAT }
 
-    public static void encode(SetTransportFlagMsg msg, FriendlyByteBuf buf) {
-        buf.writeEnum(msg.op);
-        buf.writeVarInt(msg.value);
-    }
+    public static final Type<SetTransportFlagMsg> TYPE =
+            new Type<>(ResourceLocation.fromNamespaceAndPath(BpMelodiesMod.MODID, "transport"));
 
-    public static SetTransportFlagMsg decode(FriendlyByteBuf buf) {
-        return new SetTransportFlagMsg(buf.readEnum(Op.class), buf.readVarInt());
-    }
+    public static final StreamCodec<RegistryFriendlyByteBuf, SetTransportFlagMsg> STREAM_CODEC =
+            StreamCodec.of(
+                    (buf, msg) -> { buf.writeEnum(msg.op); buf.writeVarInt(msg.value); },
+                    buf -> new SetTransportFlagMsg(buf.readEnum(Op.class), buf.readVarInt())
+            );
 
-    public static void handle(SetTransportFlagMsg msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().setPacketHandled(true);
-        Player player = ctx.get().getSender();
-        if (player == null) return;
+    @Override
+    public Type<? extends CustomPacketPayload> type() { return TYPE; }
+
+    public static void handle(SetTransportFlagMsg msg, IPayloadContext ctx) {
+        if (!(ctx.player() instanceof ServerPlayer)) return;
+        Player player = ctx.player();
         JukeboxAccess.findJukeboxInOpenMenu(player).ifPresent(access -> {
             switch (msg.op) {
                 case PLAY -> ServerPlaybackTracker.startFromAccess(player, access);
