@@ -1,14 +1,14 @@
 package com.bpmelodies;
 
 import com.bpmelodies.common.network.ModNetwork;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.common.NeoForge;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,15 +20,15 @@ public final class BpMelodiesMod {
     public static boolean SB_PRESENT = false;
     public static boolean TB_PRESENT = false;
 
-    public BpMelodiesMod() {
-        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+    public BpMelodiesMod(IEventBus modBus, ModContainer container) {
         modBus.addListener(this::commonSetup);
+        modBus.addListener(ModNetwork::register);
 
-        ModNetwork.register();
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            com.bpmelodies.client.ClientEvents.register();
+        }
 
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> com.bpmelodies.client.ClientEvents.register());
-
-        MinecraftForge.EVENT_BUS.register(com.bpmelodies.common.playback.ServerPlaybackTracker.class);
+        NeoForge.EVENT_BUS.register(com.bpmelodies.common.playback.ServerPlaybackTracker.class);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {

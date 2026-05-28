@@ -4,7 +4,6 @@ import com.bpmelodies.BpMelodiesMod;
 import com.bpmelodies.common.handler.JukeboxAccess;
 import com.bpmelodies.common.network.BackpackPlayStartMsg;
 import com.bpmelodies.common.network.BackpackPlayStopMsg;
-import com.bpmelodies.common.network.ModNetwork;
 import immersive_melodies.resources.ServerMelodyManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -13,11 +12,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import javax.annotation.Nullable;
 import java.lang.ref.WeakReference;
@@ -179,9 +178,9 @@ public final class ServerPlaybackTracker {
     }
 
     @SubscribeEvent
-    public static void onServerTick(TickEvent.LevelTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || event.level.isClientSide()) return;
-        ServerLevel level = (ServerLevel) event.level;
+    public static void onServerTick(LevelTickEvent.Post event) {
+        if (event.getLevel().isClientSide()) return;
+        ServerLevel level = (ServerLevel) event.getLevel();
         long now = level.getGameTime();
         List<Session> snapshot = new ArrayList<>(SESSIONS.values());
         List<UUID> finished = null;
@@ -367,10 +366,8 @@ public final class ServerPlaybackTracker {
         if (e != null) { x = e.getX(); y = e.getY(); z = e.getZ(); }
         else if (s.blockPos != null) { x = s.blockPos.getX() + 0.5; y = s.blockPos.getY() + 0.5; z = s.blockPos.getZ() + 0.5; }
         else { x = 0; y = 64; z = 0; }
-        final double fx = x, fy = y, fz = z;
-        ModNetwork.CHANNEL.send(
-                PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(fx, fy, fz, 64, s.level.dimension())),
-                msg);
+        PacketDistributor.sendToPlayersNear(s.level, null, x, y, z, 64,
+                (net.minecraft.network.protocol.common.custom.CustomPacketPayload) msg);
     }
 
     private static void broadcastStart(ServerLevel level, @Nullable BlockPos pos, int entityId, UUID storageUuid,
@@ -381,9 +378,6 @@ public final class ServerPlaybackTracker {
         if (e != null) { x = e.getX(); y = e.getY(); z = e.getZ(); }
         else if (pos != null) { x = pos.getX() + 0.5; y = pos.getY() + 0.5; z = pos.getZ() + 0.5; }
         else { x = 0; y = 64; z = 0; }
-        final double fx = x, fy = y, fz = z;
-        ModNetwork.CHANNEL.send(
-                PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(fx, fy, fz, 64, level.dimension())),
-                msg);
+        PacketDistributor.sendToPlayersNear(level, null, x, y, z, 64, msg);
     }
 }

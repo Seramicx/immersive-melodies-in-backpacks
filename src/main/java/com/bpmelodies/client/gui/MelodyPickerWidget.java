@@ -1,10 +1,10 @@
 package com.bpmelodies.client.gui;
 
 import com.bpmelodies.common.handler.JukeboxAccess;
-import com.bpmelodies.common.network.ModNetwork;
 import com.bpmelodies.common.network.RequestMelodyListMsg;
 import com.bpmelodies.common.network.SetSelectedMelodyMsg;
 import com.bpmelodies.common.network.ToggleImModeMsg;
+import net.neoforged.neoforge.network.PacketDistributor;
 import com.bpmelodies.common.playback.PlaybackNbt;
 import immersive_melodies.resources.ClientMelodyManager;
 import immersive_melodies.resources.MelodyDescriptor;
@@ -49,12 +49,12 @@ public class MelodyPickerWidget {
         this.provider = provider;
         this.showImToggle = showImToggle;
         Font font = Minecraft.getInstance().font;
-        this.pageBox = new EditBox(font, x + 25, y + listYOffset() + PAGE_SIZE * ROW_H + 2, 22, BTN_H, Component.literal("p"));
+        this.pageBox = new EditBox(font, x + 25, y + listYOffset() + PAGE_SIZE * ROW_H + 2, 22, BTN_H + 1, Component.literal("p"));
         this.pageBox.setMaxLength(3);
         this.pageBox.setBordered(true);
         this.pageBox.setVisible(true);
         this.pageBox.setValue(String.valueOf(currentPage));
-        this.pageBox.moveCursorToStart();
+        this.pageBox.moveCursorToStart(false);
     }
 
     private int listYOffset() { return showImToggle ? (TOGGLE_H + 1) : 0; }
@@ -138,7 +138,7 @@ public class MelodyPickerWidget {
             long now = System.currentTimeMillis();
             if (now - lastRequestMs > 1000L) {
                 lastRequestMs = now;
-                ModNetwork.CHANNEL.sendToServer(new RequestMelodyListMsg());
+                PacketDistributor.sendToServer(new RequestMelodyListMsg());
             }
         }
 
@@ -239,7 +239,7 @@ public class MelodyPickerWidget {
         if (showImToggle) {
             if (mouseX >= x && mouseX < x + W && mouseY >= y && mouseY < y + TOGGLE_H) {
                 boolean newEnabled = !isImEnabled();
-                ModNetwork.CHANNEL.sendToServer(new ToggleImModeMsg(newEnabled));
+                PacketDistributor.sendToServer(new ToggleImModeMsg(newEnabled));
                 Minecraft.getInstance().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 return true;
             }
@@ -266,7 +266,7 @@ public class MelodyPickerWidget {
             if (idx >= total) break;
             int rowY = listY + i * ROW_H;
             if (mouseX >= x && mouseX < x + W && mouseY >= rowY && mouseY < rowY + ROW_H) {
-                ModNetwork.CHANNEL.sendToServer(new SetSelectedMelodyMsg(all.get(idx).getKey()));
+                PacketDistributor.sendToServer(new SetSelectedMelodyMsg(all.get(idx).getKey()));
                 Minecraft.getInstance().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 return true;
             }
@@ -274,10 +274,10 @@ public class MelodyPickerWidget {
 
         int pagY = listY + PAGE_SIZE * ROW_H + 2;
         if (mouseY >= pagY && mouseY < pagY + BTN_H) {
-            if (mouseX >= x + 0  && mouseX < x + 12 && currentPage > 1)          { currentPage = 1; pageBox.setValue(String.valueOf(currentPage)); pageBox.moveCursorToStart(); return true; }
-            if (mouseX >= x + 12 && mouseX < x + 24 && currentPage > 1)          { currentPage--;   pageBox.setValue(String.valueOf(currentPage)); pageBox.moveCursorToStart(); return true; }
-            if (mouseX >= x + 48 && mouseX < x + 60 && currentPage < totalPages) { currentPage++;   pageBox.setValue(String.valueOf(currentPage)); pageBox.moveCursorToStart(); return true; }
-            if (mouseX >= x + 60 && mouseX < x + 72 && currentPage < totalPages) { currentPage = totalPages; pageBox.setValue(String.valueOf(currentPage)); pageBox.moveCursorToStart(); return true; }
+            if (mouseX >= x + 0  && mouseX < x + 12 && currentPage > 1)          { currentPage = 1; pageBox.setValue(String.valueOf(currentPage)); pageBox.moveCursorToStart(false); return true; }
+            if (mouseX >= x + 12 && mouseX < x + 24 && currentPage > 1)          { currentPage--;   pageBox.setValue(String.valueOf(currentPage)); pageBox.moveCursorToStart(false); return true; }
+            if (mouseX >= x + 48 && mouseX < x + 60 && currentPage < totalPages) { currentPage++;   pageBox.setValue(String.valueOf(currentPage)); pageBox.moveCursorToStart(false); return true; }
+            if (mouseX >= x + 60 && mouseX < x + 72 && currentPage < totalPages) { currentPage = totalPages; pageBox.setValue(String.valueOf(currentPage)); pageBox.moveCursorToStart(false); return true; }
         }
 
         return false;
@@ -303,6 +303,6 @@ public class MelodyPickerWidget {
             currentPage = Math.max(1, Math.min(total, v));
         } catch (NumberFormatException ignored) {}
         pageBox.setValue(String.valueOf(currentPage));
-        pageBox.moveCursorToStart();
+        pageBox.moveCursorToStart(false);
     }
 }

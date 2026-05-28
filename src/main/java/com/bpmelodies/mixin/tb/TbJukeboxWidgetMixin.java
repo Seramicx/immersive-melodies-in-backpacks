@@ -3,8 +3,8 @@ package com.bpmelodies.mixin.tb;
 import com.bpmelodies.client.gui.MelodyPickerWidget;
 import com.bpmelodies.client.gui.TbIconButton;
 import com.bpmelodies.common.handler.JukeboxAccess;
-import com.bpmelodies.common.network.ModNetwork;
 import com.bpmelodies.common.network.SetTransportFlagMsg;
+import net.neoforged.neoforge.network.PacketDistributor;
 import com.bpmelodies.common.playback.PlaybackNbt;
 import com.tiviacz.travelersbackpack.inventory.upgrades.jukebox.JukeboxWidget;
 import net.minecraft.client.Minecraft;
@@ -130,7 +130,6 @@ public abstract class TbJukeboxWidgetMixin {
         bpm$picker(self).render(g, mouseX, mouseY, partialTick);
     }
 
-
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true, remap = true)
     private void bpm$intercept(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
         JukeboxWidget self = (JukeboxWidget) (Object) this;
@@ -160,7 +159,7 @@ public abstract class TbJukeboxWidgetMixin {
         else if (bpm$hit(mouseX, mouseY, x + 61, y + 41)) op = SetTransportFlagMsg.Op.CYCLE_REPEAT;
 
         if (op != null) {
-            ModNetwork.CHANNEL.sendToServer(new SetTransportFlagMsg(op, 0));
+            PacketDistributor.sendToServer(new SetTransportFlagMsg(op, 0));
             Minecraft.getInstance().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
             cir.setReturnValue(true);
         }

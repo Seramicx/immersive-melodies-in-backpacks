@@ -4,8 +4,8 @@ import com.bpmelodies.common.handler.JukeboxAccess;
 import com.bpmelodies.common.playback.PlaybackNbt;
 import com.bpmelodies.common.playback.ServerPlaybackTracker;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.SlotItemHandler;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.SlotItemHandler;
 import net.p3pp3rf1y.sophisticatedcore.api.IStorageWrapper;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.UpgradeWrapperBase;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper;
@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 
 @Mixin(targets = "net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeContainer$1")
 public abstract class JukeboxContainerSlotMixin extends SlotItemHandler {
-    public JukeboxContainerSlotMixin(net.minecraftforge.items.IItemHandler handler, int slot, int x, int y) {
+    public JukeboxContainerSlotMixin(net.neoforged.neoforge.items.IItemHandler handler, int slot, int x, int y) {
         super(handler, slot, x, y);
     }
 
