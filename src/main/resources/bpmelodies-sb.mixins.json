@@ -7,6 +7,7 @@
     "plugin": "com.bpmelodies.mixin.SbMixinPlugin",
     "mixins": [
         "JukeboxUpgradeWrapperMixin",
+        "JukeboxDiscInventoryMixin",
         "JukeboxContainerSlotMixin"
     ],
     "client": [

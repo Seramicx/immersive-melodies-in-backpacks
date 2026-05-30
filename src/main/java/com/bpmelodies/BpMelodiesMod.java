@@ -1,48 +1,35 @@
 package com.bpmelodies;
 
 import com.bpmelodies.common.network.ModNetwork;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import com.bpmelodies.common.network.RequestMelodyListMsg;
+import com.bpmelodies.common.playback.ServerPlaybackTracker;
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.loader.api.FabricLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@Mod(BpMelodiesMod.MODID)
-public final class BpMelodiesMod {
+public final class BpMelodiesMod implements ModInitializer {
     public static final String MODID = "bpmelodies";
     public static final Logger LOGGER = LogManager.getLogger(MODID);
 
     public static boolean SB_PRESENT = false;
     public static boolean TB_PRESENT = false;
 
-    public BpMelodiesMod() {
-        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
-        modBus.addListener(this::commonSetup);
+    @Override
+    public void onInitialize() {
+        SB_PRESENT = FabricLoader.getInstance().isModLoaded("sophisticatedcore");
+        TB_PRESENT = FabricLoader.getInstance().isModLoaded("travelersbackpack");
 
-        ModNetwork.register();
+        ModNetwork.registerServer();
 
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> com.bpmelodies.client.ClientEvents.register());
+        ServerTickEvents.END_WORLD_TICK.register(ServerPlaybackTracker::onLevelTick);
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> ServerPlaybackTracker.onServerStopping());
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
+                RequestMelodyListMsg.sendLibraryTo(handler.player));
 
-        MinecraftForge.EVENT_BUS.register(com.bpmelodies.common.playback.ServerPlaybackTracker.class);
-    }
-
-    private void commonSetup(FMLCommonSetupEvent event) {
-        SB_PRESENT = ModList.get().isLoaded("sophisticatedcore");
-        TB_PRESENT = ModList.get().isLoaded("travelersbackpack");
-
-        if (SB_PRESENT) {
-            event.enqueueWork(com.bpmelodies.adapter.sb.SbAdapter::init);
-            LOGGER.info("Sophisticated Backpacks adapter enabled.");
-        }
-        if (TB_PRESENT) {
-            event.enqueueWork(com.bpmelodies.adapter.tb.TbAdapter::init);
-            LOGGER.info("Traveler's Backpack adapter enabled.");
-        }
         if (!SB_PRESENT && !TB_PRESENT) {
             LOGGER.info("Neither Sophisticated Backpacks nor Traveler's Backpack found — bpmelodies will be inactive.");
         }

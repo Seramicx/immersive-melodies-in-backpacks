@@ -1,66 +1,61 @@
 package com.bpmelodies.common.network;
 
 import com.bpmelodies.BpMelodiesMod;
+import io.netty.buffer.Unpooled;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 
 public final class ModNetwork {
-    private static final String VERSION = "1";
+    public static final ResourceLocation SET_SELECTED = id("set_selected");
+    public static final ResourceLocation SET_TRANSPORT = id("set_transport");
+    public static final ResourceLocation REQUEST_LIST = id("request_list");
+    public static final ResourceLocation LIBRARY_SYNC = id("library_sync");
+    public static final ResourceLocation TOGGLE_IM = id("toggle_im");
+    public static final ResourceLocation PLAY_START = id("play_start");
+    public static final ResourceLocation PLAY_STOP = id("play_stop");
 
-    public static final SimpleChannel CHANNEL = NetworkRegistry.ChannelBuilder
-            .named(new ResourceLocation(BpMelodiesMod.MODID, "main"))
-            .networkProtocolVersion(() -> VERSION)
-            .clientAcceptedVersions(VERSION::equals)
-            .serverAcceptedVersions(VERSION::equals)
-            .simpleChannel();
+    private static ResourceLocation id(String path) {
+        return new ResourceLocation(BpMelodiesMod.MODID, path);
+    }
 
     private ModNetwork() {}
 
-    public static void register() {
-        int id = 0;
+    public static void registerServer() {
+        ServerPlayNetworking.registerGlobalReceiver(SET_SELECTED, (server, player, h, buf, sender) -> {
+            SetSelectedMelodyMsg msg = SetSelectedMelodyMsg.decode(buf);
+            server.execute(() -> SetSelectedMelodyMsg.handle(msg, player));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(SET_TRANSPORT, (server, player, h, buf, sender) -> {
+            SetTransportFlagMsg msg = SetTransportFlagMsg.decode(buf);
+            server.execute(() -> SetTransportFlagMsg.handle(msg, player));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(REQUEST_LIST, (server, player, h, buf, sender) ->
+                server.execute(() -> RequestMelodyListMsg.sendLibraryTo(player)));
+        ServerPlayNetworking.registerGlobalReceiver(TOGGLE_IM, (server, player, h, buf, sender) -> {
+            ToggleImModeMsg msg = ToggleImModeMsg.decode(buf);
+            server.execute(() -> ToggleImModeMsg.handle(msg, player));
+        });
+    }
 
-        CHANNEL.messageBuilder(SetSelectedMelodyMsg.class, id++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SetSelectedMelodyMsg::encode)
-                .decoder(SetSelectedMelodyMsg::decode)
-                .consumerMainThread(SetSelectedMelodyMsg::handle)
-                .add();
+    public static FriendlyByteBuf buf() {
+        return new FriendlyByteBuf(Unpooled.buffer());
+    }
 
-        CHANNEL.messageBuilder(SetTransportFlagMsg.class, id++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(SetTransportFlagMsg::encode)
-                .decoder(SetTransportFlagMsg::decode)
-                .consumerMainThread(SetTransportFlagMsg::handle)
-                .add();
+    public static void toPlayer(ServerPlayer player, ResourceLocation channel, FriendlyByteBuf buf) {
+        ServerPlayNetworking.send(player, channel, buf);
+    }
 
-        CHANNEL.messageBuilder(RequestMelodyListMsg.class, id++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(RequestMelodyListMsg::encode)
-                .decoder(RequestMelodyListMsg::decode)
-                .consumerMainThread(RequestMelodyListMsg::handle)
-                .add();
-
-        CHANNEL.messageBuilder(MelodyLibrarySyncMsg.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(MelodyLibrarySyncMsg::encode)
-                .decoder(MelodyLibrarySyncMsg::decode)
-                .consumerMainThread(MelodyLibrarySyncMsg::handle)
-                .add();
-
-        CHANNEL.messageBuilder(ToggleImModeMsg.class, id++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(ToggleImModeMsg::encode)
-                .decoder(ToggleImModeMsg::decode)
-                .consumerMainThread(ToggleImModeMsg::handle)
-                .add();
-
-        CHANNEL.messageBuilder(BackpackPlayStartMsg.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(BackpackPlayStartMsg::encode)
-                .decoder(BackpackPlayStartMsg::decode)
-                .consumerMainThread(BackpackPlayStartMsg::handle)
-                .add();
-
-        CHANNEL.messageBuilder(BackpackPlayStopMsg.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(BackpackPlayStopMsg::encode)
-                .decoder(BackpackPlayStopMsg::decode)
-                .consumerMainThread(BackpackPlayStopMsg::handle)
-                .add();
+    public static void toNear(ServerLevel level, double x, double y, double z, double radius,
+                              ResourceLocation channel, FriendlyByteBuf buf) {
+        byte[] bytes = new byte[buf.readableBytes()];
+        buf.getBytes(buf.readerIndex(), bytes);
+        for (ServerPlayer player : PlayerLookup.around(level, new Vec3(x, y, z), radius)) {
+            ServerPlayNetworking.send(player, channel, new FriendlyByteBuf(Unpooled.wrappedBuffer(bytes)));
+        }
     }
 }

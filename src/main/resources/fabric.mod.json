@@ -1,0 +1,33 @@
+{
+    "schemaVersion": 1,
+    "id": "${mod_id}",
+    "version": "${version}",
+    "name": "${mod_name}",
+    "description": "${mod_description}",
+    "authors": ["${mod_authors}"],
+    "license": "${mod_license}",
+    "environment": "*",
+    "entrypoints": {
+        "main": [
+            "com.bpmelodies.BpMelodiesMod"
+        ],
+        "client": [
+            "com.bpmelodies.client.BpMelodiesClient"
+        ]
+    },
+    "mixins": [
+        "bpmelodies-sb.mixins.json",
+        "bpmelodies-tb.mixins.json"
+    ],
+    "depends": {
+        "minecraft": "1.20.1",
+        "fabricloader": ">=0.15",
+        "fabric-api": "*",
+        "immersive_melodies": ">=0.6.0"
+    },
+    "suggests": {
+        "sophisticatedbackpacks": "*",
+        "sophisticatedcore": "*",
+        "travelersbackpack": "*"
+    }
+}
