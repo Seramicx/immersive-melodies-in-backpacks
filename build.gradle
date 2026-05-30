@@ -1,10 +1,6 @@
 plugins {
-    id 'eclipse'
-    id 'idea'
+    id 'fabric-loom' version '1.12.7'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
-    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
-    id 'org.spongepowered.mixin' version '0.7.+'
 }
 
 version = mod_version
@@ -14,95 +10,71 @@ base {
     archivesName = mod_id
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-
-minecraft {
-    mappings channel: mapping_channel, version: mapping_version
-    copyIdeResources = true
-
-    runs {
-        configureEach {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
-            arg '-mixin.config=bpmelodies-sb.mixins.json'
-            arg '-mixin.config=bpmelodies-tb.mixins.json'
-
-            mods {
-                "${mod_id}" {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        client {
-            property 'forge.enabledGameTestNamespaces', mod_id
-        }
-
-        server {
-            property 'forge.enabledGameTestNamespaces', mod_id
-        }
-    }
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
-mixin {
-    add sourceSets.main, "bpmelodies.refmap.json"
-    config "bpmelodies-sb.mixins.json"
-    config "bpmelodies-tb.mixins.json"
+loom {
+    mixin {
+        useLegacyMixinAp = true
+        defaultRefmapName = 'bpmelodies.refmap.json'
+    }
 }
 
 repositories {
-    maven { url 'https://api.modrinth.com/maven' }
+    maven { url 'https://maven.fabricmc.net/' }
+    maven { url 'https://maven.parchmentmc.org' }
+    maven {
+        url 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
+    }
     maven { url 'https://cursemaven.com' }
+    maven { url 'https://mvn.devos.one/snapshots/' }
+    maven { url 'https://mvn.devos.one/releases/' }
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-
-    // Sophisticated Backpacks (1.20.1-3.24.39.1743)
-    compileOnly fg.deobf("maven.modrinth:sophisticated-backpacks:zW3DArlQ")
-    // Sophisticated Core (1.20.1-1.3.35.1851) — IDiscHandler API
-    compileOnly fg.deobf("maven.modrinth:sophisticated-core:KfjBOAgs")
-    // Traveler's Backpack (1.20.1-9.1.54)
-    compileOnly fg.deobf("maven.modrinth:travelersbackpack:uEKiccam")
-    // Immersive Melodies (0.6.1+1.20.1)
-    compileOnly fg.deobf("maven.modrinth:immersive-melodies:oF0sGcRh")
-
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-}
-
-tasks.named('processResources', ProcessResources).configure {
-    var replaceProperties = [
-            minecraft_version: minecraft_version, minecraft_version_range: minecraft_version_range,
-            forge_version: forge_version, forge_version_range: forge_version_range,
-            loader_version_range: loader_version_range,
-            mod_id: mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
-            mod_authors: mod_authors, mod_description: mod_description,
-    ]
-    inputs.properties replaceProperties
-
-    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
-        expand replaceProperties + [project: project]
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    mappings loom.layered {
+        officialMojangMappings()
+        parchment "org.parchmentmc.data:parchment-${minecraft_version}:${parchment_version}@zip"
     }
+    modImplementation "net.fabricmc:fabric-loader:${loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+
+    // Immersive Melodies (0.6.1+1.20.1)
+    modCompileOnly "maven.modrinth:immersive-melodies:0.6.1+1.20.1"
+    // Sophisticated Core unofficial fabric (1.2.7.15)
+    modCompileOnly "maven.modrinth:sophisticated-core-(unofficial-fabric-port):1.20.1-1.2.7.15.166"
+    // Sophisticated Backpacks unofficial fabric (3.23.4.5)
+    modCompileOnly "maven.modrinth:sophisticated-backpacks-(unoffical-fabric-port):1.20.1-3.23.4.5.110"
+    // Traveler's Backpack fabric — curse, modrinth serves the forge jar for 9.1.53
+    modCompileOnly "curse.maven:travelers-backpack-fabric-541171:8154657"
+    // porting-lib transfer (SC dep, no pom on modrinth)
+    modCompileOnly "io.github.fabricators_of_create.Porting-Lib:transfer:2.3.4+1.20.1"
 }
 
-tasks.named('jar', Jar).configure {
-    manifest {
-        attributes([
-                'Specification-Title'     : mod_id,
-                'Specification-Vendor'    : mod_authors,
-                'Specification-Version'   : '1',
-                'Implementation-Title'    : project.name,
-                'Implementation-Version'  : project.jar.archiveVersion,
-                'Implementation-Vendor'   : mod_authors,
-                'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-                'MixinConfigs'            : 'bpmelodies-sb.mixins.json,bpmelodies-tb.mixins.json'
+processResources {
+    inputs.property 'version', project.version
+    inputs.property 'mod_name', mod_name
+    inputs.property 'mod_license', mod_license
+    inputs.property 'mod_authors', mod_authors
+    inputs.property 'mod_description', mod_description
+
+    filesMatching('fabric.mod.json') {
+        expand([
+                version: project.version,
+                mod_id: mod_id,
+                mod_name: mod_name,
+                mod_license: mod_license,
+                mod_authors: mod_authors,
+                mod_description: mod_description,
         ])
     }
-
-    finalizedBy 'reobfJar'
 }
 
-tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
+}

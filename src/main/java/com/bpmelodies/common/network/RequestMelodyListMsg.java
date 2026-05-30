@@ -5,26 +5,12 @@ import immersive_melodies.resources.ServerMelodyManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.PacketDistributor;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
-public record RequestMelodyListMsg() {
-    public static void encode(RequestMelodyListMsg msg, FriendlyByteBuf buf) {}
-
-    public static RequestMelodyListMsg decode(FriendlyByteBuf buf) {
-        return new RequestMelodyListMsg();
-    }
-
-    public static void handle(RequestMelodyListMsg msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().setPacketHandled(true);
-        ServerPlayer player = ctx.get().getSender();
-        if (player == null) return;
-        sendLibraryTo(player);
-    }
+public final class RequestMelodyListMsg {
+    private RequestMelodyListMsg() {}
 
     public static void sendLibraryTo(ServerPlayer player) {
         try {
@@ -36,8 +22,9 @@ public record RequestMelodyListMsg() {
                         melodies.put(id, desc.getName()));
             } catch (Throwable ignored) {
             }
-            ModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-                    new MelodyLibrarySyncMsg(melodies));
+            FriendlyByteBuf buf = ModNetwork.buf();
+            MelodyLibrarySyncMsg.encode(new MelodyLibrarySyncMsg(melodies), buf);
+            ModNetwork.toPlayer(player, ModNetwork.LIBRARY_SYNC, buf);
         } catch (Throwable t) {
             BpMelodiesMod.LOGGER.warn("[bpmelodies] Failed to push melody library to {}", player.getGameProfile().getName(), t);
         }

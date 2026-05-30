@@ -1,5 +1,6 @@
 package com.bpmelodies.adapter.tb;
 
+import com.bpmelodies.common.handler.DiscInv;
 import com.bpmelodies.common.handler.JukeboxAccess;
 import com.tiviacz.travelersbackpack.inventory.BackpackWrapper;
 import com.tiviacz.travelersbackpack.inventory.menu.BackpackBaseMenu;
@@ -10,9 +11,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.items.IItemHandler;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,6 +20,7 @@ public final class TbJukeboxAccess implements JukeboxAccess {
     private final JukeboxUpgrade upgrade;
     private final BackpackWrapper wrapper;
     private final Player player;
+    private DiscInv discInv;
 
     private TbJukeboxAccess(JukeboxUpgrade upgrade, BackpackWrapper wrapper, Player player) {
         this.upgrade = upgrade;
@@ -51,8 +52,16 @@ public final class TbJukeboxAccess implements JukeboxAccess {
     }
 
     @Override
-    public IItemHandler discInventory() {
-        return upgrade.diskHandler;
+    public DiscInv discInventory() {
+        if (discInv == null) {
+            discInv = new DiscInv() {
+                @Override public int getSlots() { return upgrade.diskHandler.getSlots(); }
+                @Override public ItemStack getStackInSlot(int slot) { return upgrade.diskHandler.getStackInSlot(slot); }
+                @Override public void setStackInSlot(int slot, ItemStack stack) { upgrade.diskHandler.setStackInSlot(slot, stack); }
+                @Override public Object raw() { return upgrade.diskHandler; }
+            };
+        }
+        return discInv;
     }
 
     @Override

@@ -1,15 +1,10 @@
 package com.bpmelodies.common.network;
 
-import com.bpmelodies.client.playback.ClientPlaybackTracker;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
 
 import java.util.UUID;
-import java.util.function.Supplier;
 
 public record BackpackPlayStartMsg(
         UUID storageUuid,
@@ -37,11 +32,5 @@ public record BackpackPlayStartMsg(
         int eid = buf.readVarInt();
         BlockPos pos = buf.readBoolean() ? buf.readBlockPos() : null;
         return new BackpackPlayStartMsg(uuid, item, mel, startGT, eid, pos);
-    }
-
-    public static void handle(BackpackPlayStartMsg msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().setPacketHandled(true);
-        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
-                () -> () -> ClientPlaybackTracker.start(msg)));
     }
 }

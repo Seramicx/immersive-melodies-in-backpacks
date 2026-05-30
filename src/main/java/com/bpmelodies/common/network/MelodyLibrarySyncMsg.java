@@ -4,13 +4,9 @@ import immersive_melodies.resources.ClientMelodyManager;
 import immersive_melodies.resources.MelodyDescriptor;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 public record MelodyLibrarySyncMsg(Map<ResourceLocation, String> melodies) {
 
@@ -31,14 +27,11 @@ public record MelodyLibrarySyncMsg(Map<ResourceLocation, String> melodies) {
         return new MelodyLibrarySyncMsg(m);
     }
 
-    public static void handle(MelodyLibrarySyncMsg msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().setPacketHandled(true);
-        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
-            Map<ResourceLocation, MelodyDescriptor> dst = ClientMelodyManager.getMelodiesList();
-            dst.clear();
-            for (Map.Entry<ResourceLocation, String> e : msg.melodies.entrySet()) {
-                dst.put(e.getKey(), new MelodyDescriptor(e.getValue()));
-            }
-        }));
+    public static void apply(MelodyLibrarySyncMsg msg) {
+        Map<ResourceLocation, MelodyDescriptor> dst = ClientMelodyManager.getMelodiesList();
+        dst.clear();
+        for (Map.Entry<ResourceLocation, String> e : msg.melodies.entrySet()) {
+            dst.put(e.getKey(), new MelodyDescriptor(e.getValue()));
+        }
     }
 }

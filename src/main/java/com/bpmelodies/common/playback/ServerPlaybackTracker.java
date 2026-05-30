@@ -8,18 +8,14 @@ import com.bpmelodies.common.network.ModNetwork;
 import immersive_melodies.resources.ServerMelodyManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.network.PacketDistributor;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import java.lang.ref.WeakReference;
 import java.util.*;
 
@@ -30,6 +26,7 @@ public final class ServerPlaybackTracker {
     private static final Map<UUID, Deque<ResourceLocation>> SHUFFLE_HISTORY = new HashMap<>();
     private static final Map<UUID, JukeboxAccess> TB_ACCESS = new HashMap<>();
     private static final Random PICK_RANDOM = new Random();
+
     public static void pushShuffleHistory(UUID storageUuid, ResourceLocation melody) {
         if (melody == null) return;
         Deque<ResourceLocation> d = SHUFFLE_HISTORY.computeIfAbsent(storageUuid, k -> new ArrayDeque<>());
@@ -65,7 +62,7 @@ public final class ServerPlaybackTracker {
     public static void stopSessionsForTbHandler(Object handler) {
         List<UUID> toStop = null;
         for (Map.Entry<UUID, JukeboxAccess> e : TB_ACCESS.entrySet()) {
-            if (e.getValue().discInventory() == handler) {
+            if (e.getValue().discInventory().raw() == handler) {
                 if (toStop == null) toStop = new ArrayList<>();
                 toStop.add(e.getKey());
             }
@@ -79,7 +76,7 @@ public final class ServerPlaybackTracker {
         WRAPPERS.put(storageUuid, new WeakReference<>(wrapper));
     }
 
-    @javax.annotation.Nullable
+    @Nullable
     public static net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper getWrapperFor(UUID storageUuid) {
         var ref = WRAPPERS.get(storageUuid);
         return ref == null ? null : ref.get();
@@ -155,7 +152,7 @@ public final class ServerPlaybackTracker {
         Session s = SESSIONS.remove(storageUuid);
         clearShuffleHistory(storageUuid);
         if (s == null) return;
-        sendNear(s, new BackpackPlayStopMsg(storageUuid));
+        sendStopNear(s, storageUuid);
         if (BpMelodiesMod.SB_PRESENT) {
             try {
                 net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.ServerStorageSoundHandler.stopPlayingDisc(
@@ -166,22 +163,11 @@ public final class ServerPlaybackTracker {
         }
     }
 
-    @SubscribeEvent
-    public static void onServerStopping(ServerStoppingEvent event) {
+    public static void onServerStopping() {
         SESSIONS.clear();
     }
 
-    @SubscribeEvent
-    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
-            com.bpmelodies.common.network.RequestMelodyListMsg.sendLibraryTo(sp);
-        }
-    }
-
-    @SubscribeEvent
-    public static void onServerTick(TickEvent.LevelTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || event.level.isClientSide()) return;
-        ServerLevel level = (ServerLevel) event.level;
+    public static void onLevelTick(ServerLevel level) {
         long now = level.getGameTime();
         List<Session> snapshot = new ArrayList<>(SESSIONS.values());
         List<UUID> finished = null;
@@ -202,7 +188,7 @@ public final class ServerPlaybackTracker {
                 Session s = SESSIONS.remove(uuid);
                 if (s != null) {
                     NextAction action = applyShuffleRepeat(s, uuid);
-                    sendNear(s, new BackpackPlayStopMsg(uuid));
+                    sendStopNear(s, uuid);
                     switch (action) {
                         case DELEGATE_SB -> {
                             if (s.sbOnFinished != null) {
@@ -361,16 +347,15 @@ public final class ServerPlaybackTracker {
         return 1;
     }
 
-    private static void sendNear(Session s, Object msg) {
+    private static void sendStopNear(Session s, UUID uuid) {
         double x, y, z;
         Entity e = s.entityId >= 0 ? s.level.getEntity(s.entityId) : null;
         if (e != null) { x = e.getX(); y = e.getY(); z = e.getZ(); }
         else if (s.blockPos != null) { x = s.blockPos.getX() + 0.5; y = s.blockPos.getY() + 0.5; z = s.blockPos.getZ() + 0.5; }
         else { x = 0; y = 64; z = 0; }
-        final double fx = x, fy = y, fz = z;
-        ModNetwork.CHANNEL.send(
-                PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(fx, fy, fz, 64, s.level.dimension())),
-                msg);
+        FriendlyByteBuf buf = ModNetwork.buf();
+        BackpackPlayStopMsg.encode(new BackpackPlayStopMsg(uuid), buf);
+        ModNetwork.toNear(s.level, x, y, z, 64, ModNetwork.PLAY_STOP, buf);
     }
 
     private static void broadcastStart(ServerLevel level, @Nullable BlockPos pos, int entityId, UUID storageUuid,
@@ -381,9 +366,8 @@ public final class ServerPlaybackTracker {
         if (e != null) { x = e.getX(); y = e.getY(); z = e.getZ(); }
         else if (pos != null) { x = pos.getX() + 0.5; y = pos.getY() + 0.5; z = pos.getZ() + 0.5; }
         else { x = 0; y = 64; z = 0; }
-        final double fx = x, fy = y, fz = z;
-        ModNetwork.CHANNEL.send(
-                PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(fx, fy, fz, 64, level.dimension())),
-                msg);
+        FriendlyByteBuf buf = ModNetwork.buf();
+        BackpackPlayStartMsg.encode(msg, buf);
+        ModNetwork.toNear(level, x, y, z, 64, ModNetwork.PLAY_START, buf);
     }
 }

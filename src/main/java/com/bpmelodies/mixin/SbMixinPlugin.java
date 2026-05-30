@@ -1,6 +1,6 @@
 package com.bpmelodies.mixin;
 
-import net.minecraftforge.fml.loading.LoadingModList;
+import net.fabricmc.loader.api.FabricLoader;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
@@ -11,7 +11,7 @@ public class SbMixinPlugin implements IMixinConfigPlugin {
     private boolean enabled = false;
 
     @Override public void onLoad(String mixinPackage) {
-        enabled = LoadingModList.get().getModFileById("sophisticatedcore") != null;
+        enabled = FabricLoader.getInstance().isModLoaded("sophisticatedcore");
     }
 
     @Override public String getRefMapperConfig() { return null; }

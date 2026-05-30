@@ -7,10 +7,8 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent;
 
 import java.util.List;
-import java.util.function.Supplier;
 
 public record SetTransportFlagMsg(Op op, int value) {
     public enum Op { PLAY, STOP, NEXT, PREV, TOGGLE_SHUFFLE, CYCLE_REPEAT }
@@ -24,9 +22,7 @@ public record SetTransportFlagMsg(Op op, int value) {
         return new SetTransportFlagMsg(buf.readEnum(Op.class), buf.readVarInt());
     }
 
-    public static void handle(SetTransportFlagMsg msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().setPacketHandled(true);
-        Player player = ctx.get().getSender();
+    public static void handle(SetTransportFlagMsg msg, Player player) {
         if (player == null) return;
         JukeboxAccess.findJukeboxInOpenMenu(player).ifPresent(access -> {
             switch (msg.op) {

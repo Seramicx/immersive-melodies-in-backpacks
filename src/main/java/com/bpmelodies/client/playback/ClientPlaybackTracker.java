@@ -3,10 +3,8 @@ package com.bpmelodies.client.playback;
 import com.bpmelodies.common.network.BackpackPlayStartMsg;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -40,9 +38,7 @@ public final class ClientPlaybackTracker {
         return s == null ? null : s.melodyId;
     }
 
-    @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void tick() {
         if (Minecraft.getInstance().isPaused()) return;
         long now = Minecraft.getInstance().level == null ? 0 : Minecraft.getInstance().level.getGameTime();
         Iterator<Map.Entry<UUID, BackpackPlaybackSession>> it = SESSIONS.entrySet().iterator();

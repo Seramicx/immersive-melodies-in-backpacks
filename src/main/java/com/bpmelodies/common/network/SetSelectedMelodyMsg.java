@@ -2,13 +2,11 @@ package com.bpmelodies.common.network;
 
 import com.bpmelodies.common.handler.JukeboxAccess;
 import com.bpmelodies.common.playback.PlaybackNbt;
+import com.bpmelodies.common.playback.ServerPlaybackTracker;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.NetworkEvent;
-
-import java.util.function.Supplier;
 
 public record SetSelectedMelodyMsg(ResourceLocation melody) {
     public static void encode(SetSelectedMelodyMsg msg, FriendlyByteBuf buf) {
@@ -19,9 +17,7 @@ public record SetSelectedMelodyMsg(ResourceLocation melody) {
         return new SetSelectedMelodyMsg(buf.readResourceLocation());
     }
 
-    public static void handle(SetSelectedMelodyMsg msg, Supplier<NetworkEvent.Context> ctx) {
-        ctx.get().setPacketHandled(true);
-        Player player = ctx.get().getSender();
+    public static void handle(SetSelectedMelodyMsg msg, Player player) {
         if (player == null) return;
         JukeboxAccess.findJukeboxInOpenMenu(player).ifPresent(access -> {
             int slot = access.findInstrumentSlot();
@@ -30,11 +26,11 @@ public record SetSelectedMelodyMsg(ResourceLocation melody) {
             PlaybackNbt.setSelectedMelody(instrument, msg.melody);
             access.markDiscSlotDirty(slot);
             java.util.UUID uuid = access.storageUuid();
-            var wrapper = com.bpmelodies.common.playback.ServerPlaybackTracker.getWrapperFor(uuid);
+            var wrapper = ServerPlaybackTracker.getWrapperFor(uuid);
             if (wrapper != null && wrapper.isPlaying()) {
                 try { wrapper.playNext(); } catch (Throwable ignored) {}
-            } else if (com.bpmelodies.common.playback.ServerPlaybackTracker.hasActiveSession(uuid)) {
-                com.bpmelodies.common.playback.ServerPlaybackTracker.startFromAccess(player, access);
+            } else if (ServerPlaybackTracker.hasActiveSession(uuid)) {
+                ServerPlaybackTracker.startFromAccess(player, access);
             }
         });
     }
