@@ -1,21 +1,46 @@
 package com.bpmelodies.common.network;
 
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 
 public final class ModNetwork {
     private ModNetwork() {}
 
-    public static void register(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar reg = event.registrar("1");
+    public static void registerCommon() {
+        PayloadTypeRegistry.playC2S().register(SetSelectedMelodyMsg.TYPE, SetSelectedMelodyMsg.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(SetTransportFlagMsg.TYPE, SetTransportFlagMsg.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(RequestMelodyListMsg.TYPE, RequestMelodyListMsg.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(ToggleImModeMsg.TYPE, ToggleImModeMsg.STREAM_CODEC);
 
-        reg.playToServer(SetSelectedMelodyMsg.TYPE, SetSelectedMelodyMsg.STREAM_CODEC, SetSelectedMelodyMsg::handle);
-        reg.playToServer(SetTransportFlagMsg.TYPE, SetTransportFlagMsg.STREAM_CODEC, SetTransportFlagMsg::handle);
-        reg.playToServer(RequestMelodyListMsg.TYPE, RequestMelodyListMsg.STREAM_CODEC, RequestMelodyListMsg::handle);
-        reg.playToServer(ToggleImModeMsg.TYPE, ToggleImModeMsg.STREAM_CODEC, ToggleImModeMsg::handle);
+        PayloadTypeRegistry.playS2C().register(BackpackPlayStartMsg.TYPE, BackpackPlayStartMsg.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(BackpackPlayStopMsg.TYPE, BackpackPlayStopMsg.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(MelodyLibrarySyncMsg.TYPE, MelodyLibrarySyncMsg.STREAM_CODEC);
+    }
 
-        reg.playToClient(BackpackPlayStartMsg.TYPE, BackpackPlayStartMsg.STREAM_CODEC, BackpackPlayStartMsg::handle);
-        reg.playToClient(BackpackPlayStopMsg.TYPE, BackpackPlayStopMsg.STREAM_CODEC, BackpackPlayStopMsg::handle);
-        reg.playToClient(MelodyLibrarySyncMsg.TYPE, MelodyLibrarySyncMsg.STREAM_CODEC, MelodyLibrarySyncMsg::handle);
+    public static void registerServer() {
+        ServerPlayNetworking.registerGlobalReceiver(SetSelectedMelodyMsg.TYPE, (msg, ctx) ->
+                ctx.server().execute(() -> SetSelectedMelodyMsg.handle(msg, ctx.player())));
+        ServerPlayNetworking.registerGlobalReceiver(SetTransportFlagMsg.TYPE, (msg, ctx) ->
+                ctx.server().execute(() -> SetTransportFlagMsg.handle(msg, ctx.player())));
+        ServerPlayNetworking.registerGlobalReceiver(RequestMelodyListMsg.TYPE, (msg, ctx) ->
+                ctx.server().execute(() -> RequestMelodyListMsg.sendLibraryTo(ctx.player())));
+        ServerPlayNetworking.registerGlobalReceiver(ToggleImModeMsg.TYPE, (msg, ctx) ->
+                ctx.server().execute(() -> ToggleImModeMsg.handle(msg, ctx.player())));
+    }
+
+    public static void toPlayer(ServerPlayer player, CustomPacketPayload payload) {
+        ServerPlayNetworking.send(player, payload);
+    }
+
+    public static void toNear(ServerLevel level, double x, double y, double z, double radius, CustomPacketPayload payload) {
+        Vec3 origin = new Vec3(x, y, z);
+        for (ServerPlayer p : PlayerLookup.around(level, origin, radius)) {
+            ServerPlayNetworking.send(p, payload);
+        }
     }
 }

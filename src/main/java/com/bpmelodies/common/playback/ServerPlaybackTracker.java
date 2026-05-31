@@ -4,21 +4,18 @@ import com.bpmelodies.BpMelodiesMod;
 import com.bpmelodies.common.handler.JukeboxAccess;
 import com.bpmelodies.common.network.BackpackPlayStartMsg;
 import com.bpmelodies.common.network.BackpackPlayStopMsg;
+import com.bpmelodies.common.network.ModNetwork;
 import immersive_melodies.resources.ServerMelodyManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.server.ServerStoppingEvent;
-import net.neoforged.neoforge.event.tick.LevelTickEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import java.lang.ref.WeakReference;
 import java.util.*;
 
@@ -78,7 +75,7 @@ public final class ServerPlaybackTracker {
         WRAPPERS.put(storageUuid, new WeakReference<>(wrapper));
     }
 
-    @javax.annotation.Nullable
+    @Nullable
     public static net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper getWrapperFor(UUID storageUuid) {
         var ref = WRAPPERS.get(storageUuid);
         return ref == null ? null : ref.get();
@@ -165,22 +162,11 @@ public final class ServerPlaybackTracker {
         }
     }
 
-    @SubscribeEvent
-    public static void onServerStopping(ServerStoppingEvent event) {
+    public static void onServerStopping() {
         SESSIONS.clear();
     }
 
-    @SubscribeEvent
-    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
-            com.bpmelodies.common.network.RequestMelodyListMsg.sendLibraryTo(sp);
-        }
-    }
-
-    @SubscribeEvent
-    public static void onServerTick(LevelTickEvent.Post event) {
-        if (event.getLevel().isClientSide()) return;
-        ServerLevel level = (ServerLevel) event.getLevel();
+    public static void onLevelTick(ServerLevel level) {
         long now = level.getGameTime();
         List<Session> snapshot = new ArrayList<>(SESSIONS.values());
         List<UUID> finished = null;
@@ -259,7 +245,9 @@ public final class ServerPlaybackTracker {
             return NextAction.DELEGATE_SB;
         }
 
-        var cur = PlaybackNbt.getSelectedMelody(s.instrumentStack);
+        ResourceLocation cur = s.melodyId != null
+                ? s.melodyId
+                : PlaybackNbt.getSelectedMelody(s.instrumentStack);
         String playerName = null;
         if (s.entityId >= 0) {
             Entity e = s.level.getEntity(s.entityId);
@@ -298,6 +286,20 @@ public final class ServerPlaybackTracker {
 
         if (pick != null && !pick.equals(cur)) {
             PlaybackNbt.setSelectedMelody(s.instrumentStack, pick);
+            if (isSb && wrapper != null) {
+                try {
+                    var inv = (net.p3pp3rf1y.sophisticatedcore.util.ComponentItemHandler) wrapper.getDiscInventory();
+                    int slot = wrapper.getDiscSlotActive();
+                    if (slot < 0) {
+                        for (int i = 0; i < inv.getSlotCount(); i++) {
+                            if (JukeboxAccess.isInstrument(inv.getStackInSlot(i))) { slot = i; break; }
+                        }
+                    }
+                    if (slot >= 0) inv.setStackInSlot(slot, s.instrumentStack);
+                } catch (Throwable t) {
+                    BpMelodiesMod.LOGGER.warn("[tracker] SB persist autoplay melody failed", t);
+                }
+            }
             if (!isSb && tbAccess != null) tbAccess.markDiscSlotDirty(tbAccess.findInstrumentSlot());
         }
 
@@ -360,14 +362,13 @@ public final class ServerPlaybackTracker {
         return 1;
     }
 
-    private static void sendNear(Session s, Object msg) {
+    private static void sendNear(Session s, CustomPacketPayload msg) {
         double x, y, z;
         Entity e = s.entityId >= 0 ? s.level.getEntity(s.entityId) : null;
         if (e != null) { x = e.getX(); y = e.getY(); z = e.getZ(); }
         else if (s.blockPos != null) { x = s.blockPos.getX() + 0.5; y = s.blockPos.getY() + 0.5; z = s.blockPos.getZ() + 0.5; }
         else { x = 0; y = 64; z = 0; }
-        PacketDistributor.sendToPlayersNear(s.level, null, x, y, z, 64,
-                (net.minecraft.network.protocol.common.custom.CustomPacketPayload) msg);
+        ModNetwork.toNear(s.level, x, y, z, 64, msg);
     }
 
     private static void broadcastStart(ServerLevel level, @Nullable BlockPos pos, int entityId, UUID storageUuid,
@@ -378,6 +379,6 @@ public final class ServerPlaybackTracker {
         if (e != null) { x = e.getX(); y = e.getY(); z = e.getZ(); }
         else if (pos != null) { x = pos.getX() + 0.5; y = pos.getY() + 0.5; z = pos.getZ() + 0.5; }
         else { x = 0; y = 64; z = 0; }
-        PacketDistributor.sendToPlayersNear(level, null, x, y, z, 64, msg);
+        ModNetwork.toNear(level, x, y, z, 64, msg);
     }
 }

@@ -1,10 +1,7 @@
 package com.bpmelodies.client.gui;
 
+import com.bpmelodies.client.ClientNetwork;
 import com.bpmelodies.common.handler.JukeboxAccess;
-import com.bpmelodies.common.network.RequestMelodyListMsg;
-import com.bpmelodies.common.network.SetSelectedMelodyMsg;
-import com.bpmelodies.common.network.ToggleImModeMsg;
-import net.neoforged.neoforge.network.PacketDistributor;
 import com.bpmelodies.common.playback.PlaybackNbt;
 import immersive_melodies.resources.ClientMelodyManager;
 import immersive_melodies.resources.MelodyDescriptor;
@@ -86,7 +83,7 @@ public class MelodyPickerWidget {
         return list;
     }
 
-    private static int imSortIndex(ResourceLocation rl, @javax.annotation.Nullable String playerName) {
+    private static int imSortIndex(ResourceLocation rl, @org.jetbrains.annotations.Nullable String playerName) {
         if ("player".equals(rl.getNamespace())) {
             if (playerName != null && rl.getPath().startsWith(playerName + "/")) return 2;
             return 0;
@@ -138,7 +135,7 @@ public class MelodyPickerWidget {
             long now = System.currentTimeMillis();
             if (now - lastRequestMs > 1000L) {
                 lastRequestMs = now;
-                PacketDistributor.sendToServer(new RequestMelodyListMsg());
+                ClientNetwork.requestList();
             }
         }
 
@@ -239,7 +236,7 @@ public class MelodyPickerWidget {
         if (showImToggle) {
             if (mouseX >= x && mouseX < x + W && mouseY >= y && mouseY < y + TOGGLE_H) {
                 boolean newEnabled = !isImEnabled();
-                PacketDistributor.sendToServer(new ToggleImModeMsg(newEnabled));
+                ClientNetwork.toggleIm(newEnabled);
                 Minecraft.getInstance().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 return true;
             }
@@ -266,7 +263,7 @@ public class MelodyPickerWidget {
             if (idx >= total) break;
             int rowY = listY + i * ROW_H;
             if (mouseX >= x && mouseX < x + W && mouseY >= rowY && mouseY < rowY + ROW_H) {
-                PacketDistributor.sendToServer(new SetSelectedMelodyMsg(all.get(idx).getKey()));
+                ClientNetwork.setSelected(all.get(idx).getKey());
                 Minecraft.getInstance().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 return true;
             }

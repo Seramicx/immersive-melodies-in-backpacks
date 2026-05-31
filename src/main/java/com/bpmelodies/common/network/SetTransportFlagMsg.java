@@ -8,10 +8,8 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.List;
 
@@ -30,9 +28,8 @@ public record SetTransportFlagMsg(Op op, int value) implements CustomPacketPaylo
     @Override
     public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
-    public static void handle(SetTransportFlagMsg msg, IPayloadContext ctx) {
-        if (!(ctx.player() instanceof ServerPlayer)) return;
-        Player player = ctx.player();
+    public static void handle(SetTransportFlagMsg msg, Player player) {
+        if (player == null) return;
         JukeboxAccess.findJukeboxInOpenMenu(player).ifPresent(access -> {
             switch (msg.op) {
                 case PLAY -> ServerPlaybackTracker.startFromAccess(player, access);

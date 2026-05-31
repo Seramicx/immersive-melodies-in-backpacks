@@ -3,8 +3,6 @@ package com.bpmelodies.client;
 import com.bpmelodies.BpMelodiesMod;
 import com.bpmelodies.common.handler.JukeboxAccess;
 import net.minecraft.client.Minecraft;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.p3pp3rf1y.sophisticatedcore.common.gui.StorageContainerMenuBase;
 import net.p3pp3rf1y.sophisticatedcore.common.gui.UpgradeContainerBase;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeContainer;
@@ -19,8 +17,7 @@ public final class SbInstrumentSlotWatcher {
     private static Boolean lastHadInstrument = null;
     private static Method onUpgradesChangedMethod;
 
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void tick() {
         try {
             tickInner();
         } catch (Throwable t) {

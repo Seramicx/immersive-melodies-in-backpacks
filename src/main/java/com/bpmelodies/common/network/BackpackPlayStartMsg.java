@@ -1,13 +1,11 @@
 package com.bpmelodies.common.network;
 
 import com.bpmelodies.BpMelodiesMod;
-import com.bpmelodies.client.playback.ClientPlaybackTracker;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.UUID;
 
@@ -46,8 +44,4 @@ public record BackpackPlayStartMsg(
 
     @Override
     public Type<? extends CustomPacketPayload> type() { return TYPE; }
-
-    public static void handle(BackpackPlayStartMsg msg, IPayloadContext ctx) {
-        ClientPlaybackTracker.start(msg);
-    }
 }
