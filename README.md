@@ -24,7 +24,7 @@ Forge 1.20.1 mod that lets you put [Immersive Melodies](https://www.curseforge.c
 gradlew.bat build
 ```
 
-Output: `build/libs/bpmelodies-1.0.0.jar`.
+Output: `build/libs/bpmelodies-fabric-1.21.1-1.0.0.jar`.
 
 ## License
 
