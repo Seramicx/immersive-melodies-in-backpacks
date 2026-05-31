@@ -24,7 +24,7 @@ Forge 1.20.1 mod that lets you put [Immersive Melodies](https://www.curseforge.c
 java -classpath "gradle/wrapper/gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain build
 ```
 
-Output: `build/libs/bpmelodies-1.0.0.jar`.
+Output: `build/libs/bpmelodies-neoforge-1.21.1-1.0.0.jar`.
 
 ## License
 
