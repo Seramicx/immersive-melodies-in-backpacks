@@ -8,8 +8,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraft.world.entity.player.Player;
 
 public record ToggleImModeMsg(boolean enabled) implements CustomPacketPayload {
     public static final Type<ToggleImModeMsg> TYPE =
@@ -24,9 +23,9 @@ public record ToggleImModeMsg(boolean enabled) implements CustomPacketPayload {
     @Override
     public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
-    public static void handle(ToggleImModeMsg msg, IPayloadContext ctx) {
-        if (!(ctx.player() instanceof ServerPlayer)) return;
-        JukeboxAccess.findJukeboxInOpenMenu(ctx.player()).ifPresent(access -> {
+    public static void handle(ToggleImModeMsg msg, Player player) {
+        if (player == null) return;
+        JukeboxAccess.findJukeboxInOpenMenu(player).ifPresent(access -> {
             PlaybackNbt.setImEnabled(access.upgradeStack(), msg.enabled);
             access.markUpgradeDirty();
             if (!msg.enabled) {

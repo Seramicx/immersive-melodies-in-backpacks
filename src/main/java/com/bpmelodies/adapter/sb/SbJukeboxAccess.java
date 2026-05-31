@@ -1,19 +1,20 @@
 package com.bpmelodies.adapter.sb;
 
+import com.bpmelodies.common.handler.DiscInv;
 import com.bpmelodies.common.handler.JukeboxAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.IItemHandler;
 import net.p3pp3rf1y.sophisticatedcore.api.IStorageWrapper;
 import net.p3pp3rf1y.sophisticatedcore.common.gui.StorageContainerMenuBase;
 import net.p3pp3rf1y.sophisticatedcore.common.gui.UpgradeContainerBase;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.UpgradeWrapperBase;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeContainer;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper;
+import net.p3pp3rf1y.sophisticatedcore.util.ComponentItemHandler;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Field;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,6 +28,8 @@ public final class SbJukeboxAccess implements JukeboxAccess {
     private final IStorageWrapper storageWrapper;
     private final Player player;
     @Nullable private final BlockPos blockPos;
+    private DiscInv discInv;
+    private ItemStack[] cachedStacks;
 
     private SbJukeboxAccess(JukeboxUpgradeWrapper wrapper, JukeboxUpgradeContainer container, IStorageWrapper storageWrapper, Player player, @Nullable BlockPos blockPos) {
         this.wrapper = wrapper;
@@ -53,9 +56,30 @@ public final class SbJukeboxAccess implements JukeboxAccess {
         return storageWrapper.getContentsUuid().orElse(new UUID(0L, 0L));
     }
 
+    // ComponentItemHandler returns copies — cache per slot so markDiscSlotDirty sees mutations
     @Override
-    public IItemHandler discInventory() {
-        return wrapper.getDiscInventory();
+    public DiscInv discInventory() {
+        if (discInv == null) {
+            ComponentItemHandler inv = (ComponentItemHandler) wrapper.getDiscInventory();
+            cachedStacks = new ItemStack[inv.getSlotCount()];
+            discInv = new DiscInv() {
+                @Override public int getSlots() { return inv.getSlotCount(); }
+                @Override public ItemStack getStackInSlot(int slot) {
+                    if (slot < 0 || slot >= cachedStacks.length) return inv.getStackInSlot(slot);
+                    ItemStack cached = cachedStacks[slot];
+                    if (cached != null) return cached;
+                    ItemStack live = inv.getStackInSlot(slot);
+                    cachedStacks[slot] = live;
+                    return live;
+                }
+                @Override public void setStackInSlot(int slot, ItemStack stack) {
+                    inv.setStackInSlot(slot, stack);
+                    if (slot >= 0 && slot < cachedStacks.length) cachedStacks[slot] = null;
+                }
+                @Override public Object raw() { return inv; }
+            };
+        }
+        return discInv;
     }
 
     @Override

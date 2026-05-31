@@ -6,17 +6,15 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.IItemHandler;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface JukeboxAccess {
     UUID storageUuid();
 
-    IItemHandler discInventory();
+    DiscInv discInventory();
 
     ItemStack upgradeStack();
 
@@ -29,10 +27,8 @@ public interface JukeboxAccess {
     void markUpgradeDirty();
 
     default void markDiscSlotDirty(int slot) {
-        IItemHandler inv = discInventory();
-        if (inv instanceof IItemHandlerModifiable mod) {
-            mod.setStackInSlot(slot, inv.getStackInSlot(slot).copy());
-        }
+        DiscInv inv = discInventory();
+        inv.setStackInSlot(slot, inv.getStackInSlot(slot).copy());
     }
 
     java.util.List<ItemStack> visibleSlotStacks();

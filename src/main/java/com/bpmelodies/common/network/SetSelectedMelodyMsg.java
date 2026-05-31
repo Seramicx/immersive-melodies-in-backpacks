@@ -7,9 +7,8 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public record SetSelectedMelodyMsg(ResourceLocation melody) implements CustomPacketPayload {
     public static final Type<SetSelectedMelodyMsg> TYPE =
@@ -24,8 +23,8 @@ public record SetSelectedMelodyMsg(ResourceLocation melody) implements CustomPac
     @Override
     public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
-    public static void handle(SetSelectedMelodyMsg msg, IPayloadContext ctx) {
-        if (!(ctx.player() instanceof ServerPlayer player)) return;
+    public static void handle(SetSelectedMelodyMsg msg, Player player) {
+        if (player == null) return;
         JukeboxAccess.findJukeboxInOpenMenu(player).ifPresent(access -> {
             int slot = access.findInstrumentSlot();
             if (slot < 0) return;

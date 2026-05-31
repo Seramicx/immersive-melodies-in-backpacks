@@ -2,10 +2,12 @@
     "required": true,
     "minVersion": "0.8.5",
     "package": "com.bpmelodies.mixin.sb",
+    "refmap": "bpmelodies.refmap.json",
     "compatibilityLevel": "JAVA_21",
     "plugin": "com.bpmelodies.mixin.SbMixinPlugin",
     "mixins": [
         "JukeboxUpgradeWrapperMixin",
+        "JukeboxDiscInventoryMixin",
         "JukeboxContainerSlotMixin"
     ],
     "client": [

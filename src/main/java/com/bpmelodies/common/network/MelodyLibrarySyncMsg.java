@@ -7,7 +7,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +37,7 @@ public record MelodyLibrarySyncMsg(Map<ResourceLocation, String> melodies) imple
     @Override
     public Type<? extends CustomPacketPayload> type() { return TYPE; }
 
-    public static void handle(MelodyLibrarySyncMsg msg, IPayloadContext ctx) {
+    public static void apply(MelodyLibrarySyncMsg msg) {
         Map<ResourceLocation, MelodyDescriptor> dst = ClientMelodyManager.getMelodiesList();
         dst.clear();
         for (Map.Entry<ResourceLocation, String> e : msg.melodies.entrySet()) {
