@@ -28,7 +28,7 @@ JDK 21 (Loom 1.12 needs it to run, even though the mod targets Java 17).
 java -classpath "gradle/wrapper/gradle-wrapper.jar" org.gradle.wrapper.GradleWrapperMain build
 ```
 
-Output: `build/libs/bpmelodies-1.0.0.jar`.
+Output: `build/libs/bpmelodies-fabric-1.20.1-1.0.0.jar`.
 
 ## License
 
