@@ -23,7 +23,7 @@
         "minecraft": "1.20.1",
         "fabricloader": ">=0.15",
         "fabric-api": "*",
-        "immersive_melodies": ">=0.6.0"
+        "immersive_melodies": ">=0.5.0"
     },
     "suggests": {
         "sophisticatedbackpacks": "*",
