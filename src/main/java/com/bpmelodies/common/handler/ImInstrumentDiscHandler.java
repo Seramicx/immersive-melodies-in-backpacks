@@ -15,6 +15,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.p3pp3rf1y.sophisticatedcore.api.IDiscHandler;
+import net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.ServerStorageSoundHandler;
 
 import java.util.Optional;
@@ -61,9 +62,9 @@ public class ImInstrumentDiscHandler implements IDiscHandler<MelodyDescriptor> {
     }
 
     private static boolean isImEnabledFor(UUID storageUuid) {
-        var wrapper = com.bpmelodies.common.playback.ServerPlaybackTracker.getWrapperFor(storageUuid);
+        Object wrapper = ServerPlaybackTracker.getWrapperFor(storageUuid);
         if (wrapper == null) return true;
-        return PlaybackNbt.isImEnabled(wrapper.getUpgradeStack());
+        return PlaybackNbt.isImEnabled(((JukeboxUpgradeWrapper) wrapper).getUpgradeStack());
     }
 
     @Override
