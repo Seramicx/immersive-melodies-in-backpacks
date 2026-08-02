@@ -22,7 +22,7 @@ import java.util.*;
 public final class ServerPlaybackTracker {
 
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
-    private static final Map<UUID, WeakReference<net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper>> WRAPPERS = new HashMap<>();
+    private static final Map<UUID, WeakReference<Object>> WRAPPERS = new HashMap<>();
     private static final Map<UUID, Deque<ResourceLocation>> SHUFFLE_HISTORY = new HashMap<>();
     private static final Map<UUID, JukeboxAccess> TB_ACCESS = new HashMap<>();
     private static final Random PICK_RANDOM = new Random();
@@ -72,13 +72,14 @@ public final class ServerPlaybackTracker {
 
     private ServerPlaybackTracker() {}
 
-    public static void registerWrapper(UUID storageUuid, net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper wrapper) {
+    // Signatures stay loader-neutral so nothing here can force SB class resolution with SB absent.
+    public static void registerWrapper(UUID storageUuid, Object wrapper) {
         WRAPPERS.put(storageUuid, new WeakReference<>(wrapper));
     }
 
     @Nullable
-    public static net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper getWrapperFor(UUID storageUuid) {
-        var ref = WRAPPERS.get(storageUuid);
+    public static Object getWrapperFor(UUID storageUuid) {
+        WeakReference<Object> ref = WRAPPERS.get(storageUuid);
         return ref == null ? null : ref.get();
     }
 
@@ -197,16 +198,14 @@ public final class ServerPlaybackTracker {
                             }
                         }
                         case FORCE_PLAYNEXT -> {
-                            var ref = WRAPPERS.get(uuid);
-                            var wrapper = ref == null ? null : ref.get();
+                            Object wrapper = getWrapperFor(uuid);
                             if (wrapper != null) {
-                                try { wrapper.playNext(); }
+                                try { ((net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper) wrapper).playNext(); }
                                 catch (Throwable t) { BpMelodiesMod.LOGGER.warn("[tracker] forced playNext failed", t); }
                             }
                         }
                         case STOP_END_OF_LIBRARY -> {
-                            var ref = WRAPPERS.get(uuid);
-                            var wrapper = ref == null ? null : ref.get();
+                            Object wrapper = getWrapperFor(uuid);
                             if (wrapper != null) invokeSetIsPlayingFalse(wrapper);
                         }
                         case TB_RESTART -> {
@@ -227,8 +226,7 @@ public final class ServerPlaybackTracker {
 
     private static NextAction applyShuffleRepeat(Session s, UUID uuid) {
         if (s.instrumentStack.isEmpty()) return NextAction.DELEGATE_SB;
-        var ref = WRAPPERS.get(uuid);
-        var wrapper = ref == null ? null : ref.get();
+        Object wrapper = getWrapperFor(uuid);
 
         boolean shuffle;
         PlaybackNbt.RepeatMode tbRep = null;
@@ -236,8 +234,10 @@ public final class ServerPlaybackTracker {
         boolean isSb = wrapper != null;
         JukeboxAccess tbAccess = isSb ? null : TB_ACCESS.get(uuid);
         if (isSb) {
-            shuffle = wrapper.isShuffleEnabled();
-            sbRep = wrapper.getRepeatMode();
+            net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper sbWrapper =
+                    (net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper) wrapper;
+            shuffle = sbWrapper.isShuffleEnabled();
+            sbRep = sbWrapper.getRepeatMode();
         } else if (tbAccess != null) {
             ItemStack up = tbAccess.upgradeStack();
             shuffle = PlaybackNbt.getShuffle(up);
@@ -298,7 +298,7 @@ public final class ServerPlaybackTracker {
     }
 
     private static java.lang.reflect.Method SET_IS_PLAYING_METHOD;
-    private static void invokeSetIsPlayingFalse(net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper wrapper) {
+    private static void invokeSetIsPlayingFalse(Object wrapper) {
         try {
             if (SET_IS_PLAYING_METHOD == null) {
                 SET_IS_PLAYING_METHOD = net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper.class.getDeclaredMethod("setIsPlaying", boolean.class);
