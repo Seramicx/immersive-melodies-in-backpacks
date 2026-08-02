@@ -62,7 +62,7 @@ public final class SbInstrumentSlotWatcher {
         }
     }
 
-    private static void triggerUpgradesChanged(StorageContainerMenuBase<?> menu) {
+    private static void triggerUpgradesChanged(Object menu) {
         try {
             if (onUpgradesChangedMethod == null) {
                 onUpgradesChangedMethod = StorageContainerMenuBase.class.getDeclaredMethod("onUpgradesChanged");
