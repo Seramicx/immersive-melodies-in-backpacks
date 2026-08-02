@@ -7,6 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
+import net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper;
 
 import java.util.function.Supplier;
 
@@ -30,9 +31,9 @@ public record SetSelectedMelodyMsg(ResourceLocation melody) {
             PlaybackNbt.setSelectedMelody(instrument, msg.melody);
             access.markDiscSlotDirty(slot);
             java.util.UUID uuid = access.storageUuid();
-            var wrapper = com.bpmelodies.common.playback.ServerPlaybackTracker.getWrapperFor(uuid);
-            if (wrapper != null && wrapper.isPlaying()) {
-                try { wrapper.playNext(); } catch (Throwable ignored) {}
+            Object wrapper = com.bpmelodies.common.playback.ServerPlaybackTracker.getWrapperFor(uuid);
+            if (wrapper != null && ((JukeboxUpgradeWrapper) wrapper).isPlaying()) {
+                try { ((JukeboxUpgradeWrapper) wrapper).playNext(); } catch (Throwable ignored) {}
             } else if (com.bpmelodies.common.playback.ServerPlaybackTracker.hasActiveSession(uuid)) {
                 com.bpmelodies.common.playback.ServerPlaybackTracker.startFromAccess(player, access);
             }
