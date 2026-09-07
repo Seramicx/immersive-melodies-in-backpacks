@@ -29,6 +29,8 @@ public final class BpMelodiesMod implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> ServerPlaybackTracker.onServerStopping());
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 RequestMelodyListMsg.sendLibraryTo(handler.player));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+                ServerPlaybackTracker.stopSessionsFor(handler.player.getId()));
 
         if (!SB_PRESENT && !TB_PRESENT) {
             LOGGER.info("Neither Sophisticated Backpacks nor Traveler's Backpack found — bpmelodies will be inactive.");

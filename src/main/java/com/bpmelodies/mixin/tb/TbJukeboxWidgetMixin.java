@@ -9,6 +9,7 @@ import com.bpmelodies.common.playback.PlaybackNbt;
 import com.tiviacz.travelersbackpack.inventory.upgrades.jukebox.JukeboxWidget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -23,6 +24,7 @@ import java.util.WeakHashMap;
 public abstract class TbJukeboxWidgetMixin {
 
     @Unique private static final WeakHashMap<JukeboxWidget, MelodyPickerWidget> BPM$PICKERS = new WeakHashMap<>();
+    @Unique private static final ResourceLocation BPM$PANEL = new ResourceLocation("textures/gui/container/generic_54.png");
 
     @Unique
     private MelodyPickerWidget bpm$picker(JukeboxWidget self) {
@@ -42,13 +44,16 @@ public abstract class TbJukeboxWidgetMixin {
 
     @Unique
     private void bpm$drawTabPanel(GuiGraphics g, int x, int y) {
-        int x1 = x, y1 = y, x2 = x + 105, y2 = y + 140;
-        g.fill(x1, y1, x2, y2, 0xFF373737);
-        g.fill(x1 + 1, y1 + 1, x2 - 1, y2 - 1, 0xFFC6C6C6);
-        g.fill(x1 + 1, y1 + 1, x2 - 1, y1 + 2, 0xFFFFFFFF);
-        g.fill(x1 + 1, y1 + 1, x1 + 2, y2 - 1, 0xFFFFFFFF);
-        g.fill(x1 + 1, y2 - 2, x2 - 1, y2 - 1, 0xFF555555);
-        g.fill(x2 - 2, y1 + 1, x2 - 1, y2 - 1, 0xFF555555);
+        int w = 105, h = 140;
+        g.blit(BPM$PANEL, x, y, 4, 4, 0, 0, 4, 4, 256, 256);
+        g.blit(BPM$PANEL, x + w - 4, y, 4, 4, 172, 0, 4, 4, 256, 256);
+        g.blit(BPM$PANEL, x, y + h - 4, 4, 4, 0, 218, 4, 4, 256, 256);
+        g.blit(BPM$PANEL, x + w - 4, y + h - 4, 4, 4, 172, 218, 4, 4, 256, 256);
+        g.blit(BPM$PANEL, x + 4, y, w - 8, 4, 80, 0, 1, 4, 256, 256);
+        g.blit(BPM$PANEL, x + 4, y + h - 4, w - 8, 4, 80, 218, 1, 4, 256, 256);
+        g.blit(BPM$PANEL, x, y + 4, 4, h - 8, 0, 100, 4, 1, 256, 256);
+        g.blit(BPM$PANEL, x + w - 4, y + 4, 4, h - 8, 172, 100, 4, 1, 256, 256);
+        g.fill(x + 4, y + 4, x + w - 4, y + h - 4, 0xFFC6C6C6);
 
         int sx = x + 6, sy = y + 22;
         g.fill(sx, sy, sx + 18, sy + 18, 0xFF8B8B8B);
