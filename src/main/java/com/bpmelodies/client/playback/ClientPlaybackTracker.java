@@ -2,11 +2,13 @@ package com.bpmelodies.client.playback;
 
 import com.bpmelodies.common.network.BackpackPlayStartMsg;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 import javax.annotation.Nullable;
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -14,6 +16,7 @@ import java.util.UUID;
 
 public final class ClientPlaybackTracker {
     private static final Map<UUID, BackpackPlaybackSession> SESSIONS = new HashMap<>();
+    private static WeakReference<ClientLevel> lastLevel = new WeakReference<>(null);
 
     private ClientPlaybackTracker() {}
 
@@ -40,10 +43,20 @@ public final class ClientPlaybackTracker {
         return s == null ? null : s.melodyId;
     }
 
+    public static void clearAll() {
+        for (BackpackPlaybackSession s : SESSIONS.values()) s.stop();
+        SESSIONS.clear();
+    }
+
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        if (Minecraft.getInstance().isPaused()) return;
-        long now = Minecraft.getInstance().level == null ? 0 : Minecraft.getInstance().level.getGameTime();
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level != lastLevel.get()) {
+            clearAll();
+            lastLevel = new WeakReference<>(level);
+        }
+        if (level == null || Minecraft.getInstance().isPaused()) return;
+        long now = level.getGameTime();
         Iterator<Map.Entry<UUID, BackpackPlaybackSession>> it = SESSIONS.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<UUID, BackpackPlaybackSession> e = it.next();

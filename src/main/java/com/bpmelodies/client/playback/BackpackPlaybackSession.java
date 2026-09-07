@@ -11,6 +11,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
@@ -31,6 +32,7 @@ public class BackpackPlaybackSession {
 
     @Nullable private Melody resolvedMelody;
     @Nullable private InstrumentItem resolvedInstrument;
+    @Nullable private ArmorStand blockSpeaker;
     private final Map<Integer, Integer> lastNoteIndex = new HashMap<>();
     private final List<CancelableSoundInstance> activeNotes = new ArrayList<>();
     private int tickCount = 0;
@@ -47,8 +49,8 @@ public class BackpackPlaybackSession {
     }
 
     public boolean ended(long currentGameTime) {
-        if (resolvedMelody == null || resolvedMelody.getLength() <= 0) return false;
         long elapsedMs = (currentGameTime - startGameTime) * 50L;
+        if (resolvedMelody == null || resolvedMelody.getLength() <= 0) return elapsedMs > 30000;
         return elapsedMs > resolvedMelody.getLength() + 1000;
     }
 
@@ -68,12 +70,15 @@ public class BackpackPlaybackSession {
             resolvedMelody = m;
         }
 
-        Entity source = sourceEntityId >= 0 ? mc.level.getEntity(sourceEntityId) : null;
-        if (source == null) source = mc.player;
-        double dx = source.getX() - mc.player.getX();
-        double dy = source.getY() - mc.player.getY();
-        double dz = source.getZ() - mc.player.getZ();
-        if (dx * dx + dy * dy + dz * dz > 96 * 96) return;
+        Entity source = sourceEntityId >= 0 ? mc.level.getEntity(sourceEntityId) : speaker(mc);
+        boolean audible = source != null;
+        if (audible) {
+            double dx = source.getX() - mc.player.getX();
+            double dy = source.getY() - mc.player.getY();
+            double dz = source.getZ() - mc.player.getZ();
+            audible = dx * dx + dy * dy + dz * dz <= 96 * 96;
+        }
+        if (!audible) cancelActive();
 
         long elapsedMs = (mc.level.getGameTime() - startGameTime) * 50L;
 
@@ -83,20 +88,32 @@ public class BackpackPlaybackSession {
             int idx = lastNoteIndex.getOrDefault(t, 0);
             for (int i = idx; i < notes.size(); i++) {
                 Note n = notes.get(i);
-                if (n.getTime() <= elapsedMs) {
+                if (n.getTime() > elapsedMs) {
+                    lastNoteIndex.put(t, i);
+                    break;
+                }
+                if (audible) {
                     try {
                         CancelableSoundInstance si = resolvedInstrument.playNote(source, n, elapsedMs);
                         if (si != null) activeNotes.add(si);
                     } catch (Throwable t2) {
                         com.bpmelodies.BpMelodiesMod.LOGGER.warn("[playback-session] playNote threw", t2);
                     }
-                    lastNoteIndex.put(t, i + 1);
-                } else {
-                    lastNoteIndex.put(t, i);
-                    break;
                 }
+                lastNoteIndex.put(t, i + 1);
             }
         }
+    }
+
+    // Immersive Melodies anchors every note to an Entity, so a placed backpack needs a stand-in at the block.
+    @Nullable
+    private ArmorStand speaker(Minecraft mc) {
+        if (sourceBlockPos == null) return null;
+        if (blockSpeaker == null) {
+            blockSpeaker = new ArmorStand(mc.level, sourceBlockPos.getX() + 0.5, sourceBlockPos.getY() + 0.5, sourceBlockPos.getZ() + 0.5);
+            blockSpeaker.setInvisible(true);
+        }
+        return blockSpeaker;
     }
 
     public void cancelActive() {
@@ -108,6 +125,10 @@ public class BackpackPlaybackSession {
 
     public void stop() {
         cancelActive();
+        if (blockSpeaker != null) {
+            blockSpeaker.discard();
+            blockSpeaker = null;
+        }
     }
 
 }
