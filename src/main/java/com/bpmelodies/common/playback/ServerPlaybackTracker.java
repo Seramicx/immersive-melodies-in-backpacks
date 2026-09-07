@@ -88,13 +88,13 @@ public final class ServerPlaybackTracker {
     }
 
     public static class Session {
-        public final ServerLevel level;
+        public ServerLevel level;
         public final UUID storageUuid;
         public final ItemStack instrumentStack;
         public ResourceLocation melodyId;
         public final ResourceLocation instrumentItemId;
-        @Nullable public final BlockPos blockPos;
-        public final int entityId;
+        @Nullable public BlockPos blockPos;
+        public int entityId;
         public long startGameTime;
         public long endGameTime;
         @Nullable public final Runnable sbOnFinished;
@@ -131,6 +131,9 @@ public final class ServerPlaybackTracker {
             existing.melodyId = melodyId;
             existing.startGameTime = now;
             existing.endGameTime = now + len;
+            existing.level = level;
+            existing.blockPos = pos;
+            existing.entityId = entityId;
         } else {
             SESSIONS.put(storageUuid, new Session(level, storageUuid, instrumentStack,
                     melodyId, instrumentItemId, pos, entityId, now, now + len, sbOnFinished));
@@ -156,6 +159,7 @@ public final class ServerPlaybackTracker {
     public static void stop(UUID storageUuid) {
         Session s = SESSIONS.remove(storageUuid);
         clearShuffleHistory(storageUuid);
+        TB_ACCESS.remove(storageUuid);
         if (s == null) return;
         sendNear(s, new BackpackPlayStopMsg(storageUuid));
         if (BpMelodiesMod.SB_PRESENT) {
@@ -171,6 +175,9 @@ public final class ServerPlaybackTracker {
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) {
         SESSIONS.clear();
+        TB_ACCESS.clear();
+        WRAPPERS.clear();
+        SHUFFLE_HISTORY.clear();
     }
 
     @SubscribeEvent
@@ -178,6 +185,23 @@ public final class ServerPlaybackTracker {
         if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
             com.bpmelodies.common.network.RequestMelodyListMsg.sendLibraryTo(sp);
         }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        stopSessionsFor(event.getEntity().getId());
+    }
+
+    public static void stopSessionsFor(int entityId) {
+        if (entityId < 0) return;
+        List<UUID> toStop = null;
+        for (Session s : SESSIONS.values()) {
+            if (s.entityId == entityId) {
+                if (toStop == null) toStop = new ArrayList<>();
+                toStop.add(s.storageUuid);
+            }
+        }
+        if (toStop != null) for (UUID u : toStop) stop(u);
     }
 
     @SubscribeEvent
