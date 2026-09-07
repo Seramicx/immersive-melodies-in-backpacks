@@ -10,10 +10,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 
 import org.jetbrains.annotations.Nullable;
 import java.lang.ref.WeakReference;
@@ -94,6 +97,7 @@ public final class ServerPlaybackTracker {
         public long startGameTime;
         public long endGameTime;
         @Nullable public final Runnable sbOnFinished;
+        public final Set<UUID> listeners = new HashSet<>();
 
         Session(ServerLevel level, UUID storageUuid, ItemStack instrumentStack,
                 ResourceLocation melodyId, ResourceLocation instrumentItemId,
@@ -122,19 +126,20 @@ public final class ServerPlaybackTracker {
             return;
         }
         long now = level.getGameTime();
-        Session existing = SESSIONS.get(storageUuid);
-        if (existing != null) {
-            existing.melodyId = melodyId;
-            existing.startGameTime = now;
-            existing.endGameTime = now + len;
-            existing.level = level;
-            existing.blockPos = pos;
-            existing.entityId = entityId;
+        Session s = SESSIONS.get(storageUuid);
+        if (s != null) {
+            s.melodyId = melodyId;
+            s.startGameTime = now;
+            s.endGameTime = now + len;
+            s.level = level;
+            s.blockPos = pos;
+            s.entityId = entityId;
         } else {
-            SESSIONS.put(storageUuid, new Session(level, storageUuid, instrumentStack,
-                    melodyId, instrumentItemId, pos, entityId, now, now + len, sbOnFinished));
+            s = new Session(level, storageUuid, instrumentStack,
+                    melodyId, instrumentItemId, pos, entityId, now, now + len, sbOnFinished);
+            SESSIONS.put(storageUuid, s);
         }
-        broadcastStart(level, pos, entityId, storageUuid, instrumentItemId, melodyId, now);
+        broadcastStart(s);
     }
 
     public static void startFromAccess(Player player, JukeboxAccess access) {
@@ -157,7 +162,7 @@ public final class ServerPlaybackTracker {
         clearShuffleHistory(storageUuid);
         TB_ACCESS.remove(storageUuid);
         if (s == null) return;
-        sendStopNear(s, storageUuid);
+        sendStopToListeners(s, storageUuid);
         if (BpMelodiesMod.SB_PRESENT) {
             try {
                 net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.ServerStorageSoundHandler.stopPlayingDisc(
@@ -208,7 +213,7 @@ public final class ServerPlaybackTracker {
                 Session s = SESSIONS.remove(uuid);
                 if (s != null) {
                     NextAction action = applyShuffleRepeat(s, uuid);
-                    sendStopNear(s, uuid);
+                    sendStopToListeners(s, uuid);
                     switch (action) {
                         case DELEGATE_SB -> {
                             if (s.sbOnFinished != null) {
@@ -366,27 +371,38 @@ public final class ServerPlaybackTracker {
         return 1;
     }
 
-    private static void sendStopNear(Session s, UUID uuid) {
-        double x, y, z;
+    private static Vec3 sourcePos(Session s) {
         Entity e = s.entityId >= 0 ? s.level.getEntity(s.entityId) : null;
-        if (e != null) { x = e.getX(); y = e.getY(); z = e.getZ(); }
-        else if (s.blockPos != null) { x = s.blockPos.getX() + 0.5; y = s.blockPos.getY() + 0.5; z = s.blockPos.getZ() + 0.5; }
-        else { x = 0; y = 64; z = 0; }
-        FriendlyByteBuf buf = ModNetwork.buf();
-        BackpackPlayStopMsg.encode(new BackpackPlayStopMsg(uuid), buf);
-        ModNetwork.toNear(s.level, x, y, z, 64, ModNetwork.PLAY_STOP, buf);
+        if (e != null) return e.position();
+        if (s.blockPos != null) return Vec3.atCenterOf(s.blockPos);
+        return new Vec3(0, 64, 0);
     }
 
-    private static void broadcastStart(ServerLevel level, @Nullable BlockPos pos, int entityId, UUID storageUuid,
-                                       ResourceLocation instrumentItemId, ResourceLocation melodyId, long startGameTime) {
-        BackpackPlayStartMsg msg = new BackpackPlayStartMsg(storageUuid, instrumentItemId, melodyId, startGameTime, entityId, pos);
-        double x, y, z;
-        Entity e = entityId >= 0 ? level.getEntity(entityId) : null;
-        if (e != null) { x = e.getX(); y = e.getY(); z = e.getZ(); }
-        else if (pos != null) { x = pos.getX() + 0.5; y = pos.getY() + 0.5; z = pos.getZ() + 0.5; }
-        else { x = 0; y = 64; z = 0; }
-        FriendlyByteBuf buf = ModNetwork.buf();
-        BackpackPlayStartMsg.encode(msg, buf);
-        ModNetwork.toNear(level, x, y, z, 64, ModNetwork.PLAY_START, buf);
+    // Stops go to whoever got the start, not to whoever is nearby now: a listener who walked
+    // out of the broadcast radius still has a session running client-side.
+    private static void sendStopToListeners(Session s, UUID uuid) {
+        MinecraftServer server = s.level.getServer();
+        if (server == null) return;
+        for (UUID id : s.listeners) {
+            ServerPlayer p = server.getPlayerList().getPlayer(id);
+            if (p == null) continue;
+            FriendlyByteBuf buf = ModNetwork.buf();
+            BackpackPlayStopMsg.encode(new BackpackPlayStopMsg(uuid), buf);
+            ModNetwork.toPlayer(p, ModNetwork.PLAY_STOP, buf);
+        }
+    }
+
+    private static void broadcastStart(Session s) {
+        BackpackPlayStartMsg msg = new BackpackPlayStartMsg(s.storageUuid, s.instrumentItemId, s.melodyId,
+                s.startGameTime, s.entityId, s.blockPos);
+        Vec3 at = sourcePos(s);
+        s.listeners.clear();
+        for (ServerPlayer p : s.level.players()) {
+            if (p.distanceToSqr(at) > 64 * 64) continue;
+            s.listeners.add(p.getUUID());
+            FriendlyByteBuf buf = ModNetwork.buf();
+            BackpackPlayStartMsg.encode(msg, buf);
+            ModNetwork.toPlayer(p, ModNetwork.PLAY_START, buf);
+        }
     }
 }
