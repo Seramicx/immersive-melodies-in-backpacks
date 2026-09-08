@@ -13,6 +13,7 @@ public final class ModNetwork {
         reg.playToServer(SetTransportFlagMsg.TYPE, SetTransportFlagMsg.STREAM_CODEC, SetTransportFlagMsg::handle);
         reg.playToServer(RequestMelodyListMsg.TYPE, RequestMelodyListMsg.STREAM_CODEC, RequestMelodyListMsg::handle);
         reg.playToServer(ToggleImModeMsg.TYPE, ToggleImModeMsg.STREAM_CODEC, ToggleImModeMsg::handle);
+        reg.playToServer(TogglePlaylistMsg.TYPE, TogglePlaylistMsg.STREAM_CODEC, TogglePlaylistMsg::handle);
 
         reg.playToClient(BackpackPlayStartMsg.TYPE, BackpackPlayStartMsg.STREAM_CODEC, BackpackPlayStartMsg::handle);
         reg.playToClient(BackpackPlayStopMsg.TYPE, BackpackPlayStopMsg.STREAM_CODEC, BackpackPlayStopMsg::handle);

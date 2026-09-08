@@ -4,6 +4,7 @@ import com.bpmelodies.common.handler.JukeboxAccess;
 import com.bpmelodies.common.network.RequestMelodyListMsg;
 import com.bpmelodies.common.network.SetSelectedMelodyMsg;
 import com.bpmelodies.common.network.ToggleImModeMsg;
+import com.bpmelodies.common.network.TogglePlaylistMsg;
 import net.neoforged.neoforge.network.PacketDistributor;
 import com.bpmelodies.common.playback.PlaybackNbt;
 import immersive_melodies.resources.ClientMelodyManager;
@@ -24,6 +25,8 @@ public class MelodyPickerWidget {
     public static final int BTN_H = 11;
     public static final int PAGINATION_H = BTN_H;
     public static final int TOGGLE_H = 15;
+    public static final int CHECK_SIZE = 7;
+    public static final int CHECK_COL = CHECK_SIZE + 2;
     public static final int H = TOGGLE_H + 1 + PAGE_SIZE * ROW_H + PAGINATION_H + 2;
     public static final int H_NO_TOGGLE = PAGE_SIZE * ROW_H + PAGINATION_H + 2;
 
@@ -158,18 +161,20 @@ public class MelodyPickerWidget {
             int rowY = listY + i * ROW_H;
             boolean hover = mouseX >= x && mouseX < x + W && mouseY >= rowY && mouseY < rowY + ROW_H;
             if (idx < total) {
-                boolean isSel = all.get(idx).getKey().equals(selected);
+                ResourceLocation id = all.get(idx).getKey();
+                boolean isSel = id.equals(selected);
                 int bg = isSel ? 0xFF3B6BB0 : (hover ? 0xFF505050 : 0);
                 if (bg != 0) g.fill(x, rowY, x + W, rowY + ROW_H, bg);
                 String name = all.get(idx).getValue().getName();
                 String text = (isSel ? "▶" : " ") + name;
-                if (font.width(text) > W - 4) {
-                    while (font.width(text + "…") > W - 4 && text.length() > 2) {
+                if (font.width(text) > W - CHECK_COL) {
+                    while (font.width(text + "…") > W - CHECK_COL && text.length() > 2) {
                         text = text.substring(0, text.length() - 1);
                     }
                     text += "…";
                 }
                 g.drawString(font, text, x + 2, rowY + 2, 0xFFFFFF, false);
+                drawCheck(g, mouseX, mouseY, rowY, inPlaylist(id));
             }
         }
         if (total == 0) {
@@ -184,6 +189,18 @@ public class MelodyPickerWidget {
         pageBox.render(g, mouseX, mouseY, partialTick);
         drawPageBtn(g, mouseX, mouseY, x + 48, pagY, 12, "›", currentPage < totalPages);
         drawPageBtn(g, mouseX, mouseY, x + 60, pagY, 12, "»", currentPage < totalPages);
+    }
+
+    private boolean inPlaylist(ResourceLocation id) {
+        return provider.get().map(a -> PlaybackNbt.isInPlaylist(a.upgradeStack(), id)).orElse(true);
+    }
+
+    private void drawCheck(GuiGraphics g, int mx, int my, int rowY, boolean on) {
+        int bx = x + W - CHECK_COL + 1;
+        int by = rowY + 2;
+        boolean hover = mx >= bx && mx < bx + CHECK_SIZE && my >= by && my < by + CHECK_SIZE;
+        g.fill(bx, by, bx + CHECK_SIZE, by + CHECK_SIZE, hover ? 0xFFFFFFFF : 0xFF202020);
+        g.fill(bx + 1, by + 1, bx + CHECK_SIZE - 1, by + CHECK_SIZE - 1, on ? 0xFFE0E0E0 : 0xFF555555);
     }
 
     private void drawToggle(GuiGraphics g, int mx, int my, boolean enabled) {
@@ -266,7 +283,12 @@ public class MelodyPickerWidget {
             if (idx >= total) break;
             int rowY = listY + i * ROW_H;
             if (mouseX >= x && mouseX < x + W && mouseY >= rowY && mouseY < rowY + ROW_H) {
-                PacketDistributor.sendToServer(new SetSelectedMelodyMsg(all.get(idx).getKey()));
+                ResourceLocation id = all.get(idx).getKey();
+                if (mouseX >= x + W - CHECK_COL) {
+                    PacketDistributor.sendToServer(new TogglePlaylistMsg(id, !inPlaylist(id)));
+                } else {
+                    PacketDistributor.sendToServer(new SetSelectedMelodyMsg(id));
+                }
                 Minecraft.getInstance().getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
                 return true;
             }
