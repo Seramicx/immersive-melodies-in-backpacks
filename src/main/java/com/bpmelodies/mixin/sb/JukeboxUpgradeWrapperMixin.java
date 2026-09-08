@@ -27,7 +27,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.lang.reflect.Field;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 
 @Mixin(JukeboxUpgradeWrapper.class)
 public abstract class JukeboxUpgradeWrapperMixin {
@@ -38,7 +37,6 @@ public abstract class JukeboxUpgradeWrapperMixin {
     @Shadow(remap = false) public abstract boolean isPlaying();
 
     private static Field BPM$STORAGE_WRAPPER_FIELD;
-    private static final Random BPM$RANDOM = new Random();
 
     @Inject(method = "playDisc", at = @At("RETURN"), remap = false)
     private void bpm$startInstrument(CallbackInfo ci) {
@@ -146,6 +144,7 @@ public abstract class JukeboxUpgradeWrapperMixin {
         Player player = bpm$getPlayingPlayer();
         String playerName = player == null ? null : player.getName().getString();
         ResourceLocation cur = PlaybackNbt.getSelectedMelody(disc);
+        ItemStack upgrade = ((UpgradeWrapperBase<?, ?>) (Object) this).getUpgradeStack();
         boolean shuffle = isShuffleEnabled();
         RepeatMode rep = getRepeatMode();
 
@@ -156,8 +155,8 @@ public abstract class JukeboxUpgradeWrapperMixin {
             pick = cur;
         } else if (shuffle) {
             if (dir > 0) {
-                List<ResourceLocation> all = ServerPlaybackTracker.sortedLibraryIds(playerName);
-                pick = all.isEmpty() ? null : all.get(BPM$RANDOM.nextInt(all.size()));
+                List<ResourceLocation> all = ServerPlaybackTracker.playlistIds(playerName, upgrade);
+                pick = ServerPlaybackTracker.pickShuffle(all, cur);
                 if (uuid != null && cur != null && pick != null) {
                     ServerPlaybackTracker.pushShuffleHistory(uuid, cur);
                 }
@@ -165,7 +164,7 @@ public abstract class JukeboxUpgradeWrapperMixin {
                 pick = uuid == null ? null : ServerPlaybackTracker.popShuffleHistory(uuid);
             }
         } else {
-            List<ResourceLocation> all = ServerPlaybackTracker.sortedLibraryIds(playerName);
+            List<ResourceLocation> all = ServerPlaybackTracker.playlistIds(playerName, upgrade);
             if (all.isEmpty()) { pick = null; }
             else {
                 int idx = cur == null ? -1 : all.indexOf(cur);

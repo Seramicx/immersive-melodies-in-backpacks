@@ -62,14 +62,14 @@ public record SetTransportFlagMsg(Op op, int value) {
             pick = cur;
         } else if (shuffle) {
             if (dir > 0) {
-                List<ResourceLocation> all = ServerPlaybackTracker.sortedLibraryIds(playerName);
-                pick = all.isEmpty() ? null : all.get(new java.util.Random().nextInt(all.size()));
+                List<ResourceLocation> all = ServerPlaybackTracker.playlistIds(playerName, upgrade);
+                pick = ServerPlaybackTracker.pickShuffle(all, cur);
                 if (pick != null && cur != null) ServerPlaybackTracker.pushShuffleHistory(uuid, cur);
             } else {
                 pick = ServerPlaybackTracker.popShuffleHistory(uuid);
             }
         } else {
-            List<ResourceLocation> all = ServerPlaybackTracker.sortedLibraryIds(playerName);
+            List<ResourceLocation> all = ServerPlaybackTracker.playlistIds(playerName, upgrade);
             if (all.isEmpty()) { pick = null; }
             else {
                 int idx = cur == null ? -1 : all.indexOf(cur);

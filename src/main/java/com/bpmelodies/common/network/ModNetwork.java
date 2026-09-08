@@ -16,6 +16,7 @@ public final class ModNetwork {
     public static final ResourceLocation REQUEST_LIST = id("request_list");
     public static final ResourceLocation LIBRARY_SYNC = id("library_sync");
     public static final ResourceLocation TOGGLE_IM = id("toggle_im");
+    public static final ResourceLocation TOGGLE_PLAYLIST = id("toggle_playlist");
     public static final ResourceLocation PLAY_START = id("play_start");
     public static final ResourceLocation PLAY_STOP = id("play_stop");
 
@@ -39,6 +40,10 @@ public final class ModNetwork {
         ServerPlayNetworking.registerGlobalReceiver(TOGGLE_IM, (server, player, h, buf, sender) -> {
             ToggleImModeMsg msg = ToggleImModeMsg.decode(buf);
             server.execute(() -> ToggleImModeMsg.handle(msg, player));
+        });
+        ServerPlayNetworking.registerGlobalReceiver(TOGGLE_PLAYLIST, (server, player, h, buf, sender) -> {
+            TogglePlaylistMsg msg = TogglePlaylistMsg.decode(buf);
+            server.execute(() -> TogglePlaylistMsg.handle(msg, player));
         });
     }
 
