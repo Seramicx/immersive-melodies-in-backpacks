@@ -1,16 +1,23 @@
 package com.bpmelodies.common.playback;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public final class PlaybackNbt {
     public static final String SELECTED_MELODY = "bpmelodies:selected_melody";
     public static final String SHUFFLE = "bpmelodies:shuffle";
     public static final String REPEAT = "bpmelodies:repeat";
     public static final String IM_ENABLED = "bpmelodies:im_enabled";
+    public static final String EXCLUDED = "bpmelodies:excluded";
 
     public static boolean isImEnabled(ItemStack upgradeStack) {
         if (upgradeStack.isEmpty()) return true;
@@ -84,5 +91,29 @@ public final class PlaybackNbt {
     public static void setRepeat(ItemStack upgradeStack, RepeatMode mode) {
         if (upgradeStack.isEmpty()) return;
         upgradeStack.getOrCreateTag().putString(REPEAT, mode.name());
+    }
+
+    public static Set<String> getExcluded(ItemStack upgradeStack) {
+        if (upgradeStack.isEmpty()) return Collections.emptySet();
+        CompoundTag tag = upgradeStack.getTag();
+        if (tag == null || !tag.contains(EXCLUDED)) return Collections.emptySet();
+        ListTag list = tag.getList(EXCLUDED, Tag.TAG_STRING);
+        Set<String> out = new HashSet<>();
+        for (int i = 0; i < list.size(); i++) out.add(list.getString(i));
+        return out;
+    }
+
+    public static boolean isInPlaylist(ItemStack upgradeStack, ResourceLocation melody) {
+        return !getExcluded(upgradeStack).contains(melody.toString());
+    }
+
+    public static void setInPlaylist(ItemStack upgradeStack, ResourceLocation melody, boolean included) {
+        if (upgradeStack.isEmpty()) return;
+        Set<String> ids = new HashSet<>(getExcluded(upgradeStack));
+        boolean changed = included ? ids.remove(melody.toString()) : ids.add(melody.toString());
+        if (!changed) return;
+        ListTag list = new ListTag();
+        for (String id : ids) list.add(StringTag.valueOf(id));
+        upgradeStack.getOrCreateTag().put(EXCLUDED, list);
     }
 }

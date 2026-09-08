@@ -62,5 +62,11 @@ public final class ModNetwork {
                 .decoder(BackpackPlayStopMsg::decode)
                 .consumerMainThread(BackpackPlayStopMsg::handle)
                 .add();
+
+        CHANNEL.messageBuilder(TogglePlaylistMsg.class, id++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(TogglePlaylistMsg::encode)
+                .decoder(TogglePlaylistMsg::decode)
+                .consumerMainThread(TogglePlaylistMsg::handle)
+                .add();
     }
 }
