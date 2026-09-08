@@ -8,6 +8,7 @@ import com.bpmelodies.common.network.RequestMelodyListMsg;
 import com.bpmelodies.common.network.SetSelectedMelodyMsg;
 import com.bpmelodies.common.network.SetTransportFlagMsg;
 import com.bpmelodies.common.network.ToggleImModeMsg;
+import com.bpmelodies.common.network.TogglePlaylistMsg;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.resources.ResourceLocation;
 
@@ -37,5 +38,9 @@ public final class ClientNetwork {
 
     public static void toggleIm(boolean enabled) {
         ClientPlayNetworking.send(new ToggleImModeMsg(enabled));
+    }
+
+    public static void togglePlaylist(ResourceLocation melody, boolean included) {
+        ClientPlayNetworking.send(new TogglePlaylistMsg(melody, included));
     }
 }

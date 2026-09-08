@@ -16,6 +16,7 @@ public final class ModNetwork {
         PayloadTypeRegistry.playC2S().register(SetTransportFlagMsg.TYPE, SetTransportFlagMsg.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(RequestMelodyListMsg.TYPE, RequestMelodyListMsg.STREAM_CODEC);
         PayloadTypeRegistry.playC2S().register(ToggleImModeMsg.TYPE, ToggleImModeMsg.STREAM_CODEC);
+        PayloadTypeRegistry.playC2S().register(TogglePlaylistMsg.TYPE, TogglePlaylistMsg.STREAM_CODEC);
 
         PayloadTypeRegistry.playS2C().register(BackpackPlayStartMsg.TYPE, BackpackPlayStartMsg.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(BackpackPlayStopMsg.TYPE, BackpackPlayStopMsg.STREAM_CODEC);
@@ -31,6 +32,8 @@ public final class ModNetwork {
                 ctx.server().execute(() -> RequestMelodyListMsg.sendLibraryTo(ctx.player())));
         ServerPlayNetworking.registerGlobalReceiver(ToggleImModeMsg.TYPE, (msg, ctx) ->
                 ctx.server().execute(() -> ToggleImModeMsg.handle(msg, ctx.player())));
+        ServerPlayNetworking.registerGlobalReceiver(TogglePlaylistMsg.TYPE, (msg, ctx) ->
+                ctx.server().execute(() -> TogglePlaylistMsg.handle(msg, ctx.player())));
     }
 
     public static void toPlayer(ServerPlayer player, CustomPacketPayload payload) {

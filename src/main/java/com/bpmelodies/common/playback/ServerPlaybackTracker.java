@@ -256,13 +256,15 @@ public final class ServerPlaybackTracker {
         net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.RepeatMode sbRep = null;
         boolean isSb = wrapper != null;
         JukeboxAccess tbAccess = isSb ? null : TB_ACCESS.get(uuid);
+        ItemStack up;
         if (isSb) {
             net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper sbWrapper =
                     (net.p3pp3rf1y.sophisticatedcore.upgrades.jukebox.JukeboxUpgradeWrapper) wrapper;
             shuffle = sbWrapper.isShuffleEnabled();
             sbRep = sbWrapper.getRepeatMode();
+            up = sbWrapper.getUpgradeStack();
         } else if (tbAccess != null) {
-            ItemStack up = tbAccess.upgradeStack();
+            up = tbAccess.upgradeStack();
             shuffle = PlaybackNbt.getShuffle(up);
             tbRep = PlaybackNbt.getRepeat(up);
         } else {
@@ -277,7 +279,7 @@ public final class ServerPlaybackTracker {
             Entity e = s.level.getEntity(s.entityId);
             if (e instanceof Player p) playerName = p.getName().getString();
         }
-        var all = sortedLibraryIds(playerName);
+        var all = playlistIds(playerName, up);
         ResourceLocation pick;
         boolean endOfLibrary = false;
 
@@ -292,7 +294,7 @@ public final class ServerPlaybackTracker {
         if (isRepeatOne) {
             pick = cur;
         } else if (shuffle) {
-            pick = all.isEmpty() ? null : all.get(PICK_RANDOM.nextInt(all.size()));
+            pick = pickShuffle(all, cur);
             if (pick != null && cur != null) pushShuffleHistory(uuid, cur);
         } else {
             if (all.isEmpty()) { pick = null; }
@@ -362,6 +364,26 @@ public final class ServerPlaybackTracker {
 
     public static List<ResourceLocation> sortedLibraryIds() {
         return sortedLibraryIds(null);
+    }
+
+    public static List<ResourceLocation> playlistIds(@Nullable String ownerPlayerName, ItemStack upgradeStack) {
+        Set<String> excluded = PlaybackNbt.getExcluded(upgradeStack);
+        List<ResourceLocation> all = sortedLibraryIds(ownerPlayerName);
+        if (excluded.isEmpty()) return all;
+        List<ResourceLocation> kept = new ArrayList<>();
+        for (ResourceLocation id : all) {
+            if (!excluded.contains(id.toString())) kept.add(id);
+        }
+        return kept;
+    }
+
+    @Nullable
+    public static ResourceLocation pickShuffle(List<ResourceLocation> pool, @Nullable ResourceLocation cur) {
+        if (pool.isEmpty()) return null;
+        int idx = cur == null ? -1 : pool.indexOf(cur);
+        if (idx < 0 || pool.size() == 1) return pool.get(PICK_RANDOM.nextInt(pool.size()));
+        int r = PICK_RANDOM.nextInt(pool.size() - 1);
+        return pool.get(r >= idx ? r + 1 : r);
     }
 
     public static List<ResourceLocation> sortedLibraryIds(@Nullable String ownerPlayerName) {
