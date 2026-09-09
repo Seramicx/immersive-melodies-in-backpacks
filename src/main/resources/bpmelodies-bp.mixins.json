@@ -1,0 +1,14 @@
+{
+    "required": true,
+    "minVersion": "0.8.5",
+    "package": "com.bpmelodies.mixin.bp",
+    "refmap": "bpmelodies.refmap.json",
+    "compatibilityLevel": "JAVA_21",
+    "plugin": "com.bpmelodies.mixin.BpMixinPlugin",
+    "client": [
+        "BpBackpackScreenMixin"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}

@@ -48,6 +48,7 @@ dependencies {
     modCompileOnly "maven.modrinth:sophisticated-backpacks-(unoffical-fabric-port):1.21.1-3.23.4.3.106"
     // TB fabric — curse, modrinth maven serves the neoforge jar
     modCompileOnly "curse.maven:travelers-backpack-fabric-541171:8120695"
+    modCompileOnly "curse.maven:backpacked-352835:7866686"
     // porting-lib transfer — SC dep, no pom on modrinth
     modCompileOnly "io.github.fabricators_of_create.Porting-Lib:transfer:3.1.0-beta.85+1.21.1"
 }

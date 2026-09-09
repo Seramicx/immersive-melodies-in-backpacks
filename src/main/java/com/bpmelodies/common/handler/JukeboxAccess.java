@@ -73,6 +73,14 @@ public interface JukeboxAccess {
                 BpMelodiesMod.LOGGER.debug("TbJukeboxAccess.find failed", t);
             }
         }
+        if (BpMelodiesMod.BP_PRESENT) {
+            try {
+                Optional<JukeboxAccess> bp = com.bpmelodies.adapter.bp.BpJukeboxAccess.find(player);
+                if (bp.isPresent()) return bp;
+            } catch (Throwable t) {
+                BpMelodiesMod.LOGGER.debug("BpJukeboxAccess.find failed", t);
+            }
+        }
         return Optional.empty();
     }
 }
