@@ -51,6 +51,8 @@ dependencies {
     modCompileOnly "maven.modrinth:sophisticated-backpacks-(unoffical-fabric-port):1.20.1-3.23.4.5.110"
     // Traveler's Backpack fabric — curse, modrinth serves the forge jar for 9.1.53
     modCompileOnly "curse.maven:travelers-backpack-fabric-541171:8154657"
+    // Backpacked (fabric-1.20.1-3.0.9)
+    modCompileOnly "curse.maven:backpacked-352835:7866679"
     // porting-lib transfer (SC dep, no pom on modrinth)
     modCompileOnly "io.github.fabricators_of_create.Porting-Lib:transfer:2.3.4+1.20.1"
 }

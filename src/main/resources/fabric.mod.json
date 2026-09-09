@@ -17,7 +17,8 @@
     },
     "mixins": [
         "bpmelodies-sb.mixins.json",
-        "bpmelodies-tb.mixins.json"
+        "bpmelodies-tb.mixins.json",
+        "bpmelodies-bp.mixins.json"
     ],
     "depends": {
         "minecraft": "1.20.1",
@@ -28,6 +29,7 @@
     "suggests": {
         "sophisticatedbackpacks": "*",
         "sophisticatedcore": "*",
-        "travelersbackpack": "*"
+        "travelersbackpack": "*",
+        "backpacked": "*"
     }
 }

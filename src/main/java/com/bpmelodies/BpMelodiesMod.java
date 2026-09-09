@@ -17,11 +17,13 @@ public final class BpMelodiesMod implements ModInitializer {
 
     public static boolean SB_PRESENT = false;
     public static boolean TB_PRESENT = false;
+    public static boolean BP_PRESENT = false;
 
     @Override
     public void onInitialize() {
         SB_PRESENT = FabricLoader.getInstance().isModLoaded("sophisticatedcore");
         TB_PRESENT = FabricLoader.getInstance().isModLoaded("travelersbackpack");
+        BP_PRESENT = FabricLoader.getInstance().isModLoaded("backpacked");
 
         ModNetwork.registerServer();
 
@@ -32,8 +34,8 @@ public final class BpMelodiesMod implements ModInitializer {
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
                 ServerPlaybackTracker.stopSessionsFor(handler.player.getId()));
 
-        if (!SB_PRESENT && !TB_PRESENT) {
-            LOGGER.info("Neither Sophisticated Backpacks nor Traveler's Backpack found — bpmelodies will be inactive.");
+        if (!SB_PRESENT && !TB_PRESENT && !BP_PRESENT) {
+            LOGGER.info("No supported backpack mod found — bpmelodies will be inactive.");
         }
     }
 }
