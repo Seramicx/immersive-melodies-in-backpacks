@@ -13,6 +13,8 @@ description='''${mod_description}'''
 config="bpmelodies-sb.mixins.json"
 [[mixins]]
 config="bpmelodies-tb.mixins.json"
+[[mixins]]
+config="bpmelodies-bp.mixins.json"
 
 [[dependencies.${mod_id}]]
     modId="neoforge"
@@ -53,5 +55,12 @@ config="bpmelodies-tb.mixins.json"
     modId="travelersbackpack"
     type="optional"
     versionRange="[10.1.0,)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="backpacked"
+    type="optional"
+    versionRange="[3.0.0,)"
     ordering="AFTER"
     side="BOTH"

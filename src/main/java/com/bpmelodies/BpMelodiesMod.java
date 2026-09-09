@@ -19,6 +19,7 @@ public final class BpMelodiesMod {
 
     public static boolean SB_PRESENT = false;
     public static boolean TB_PRESENT = false;
+    public static boolean BP_PRESENT = false;
 
     public BpMelodiesMod(IEventBus modBus, ModContainer container) {
         modBus.addListener(this::commonSetup);
@@ -34,6 +35,7 @@ public final class BpMelodiesMod {
     private void commonSetup(FMLCommonSetupEvent event) {
         SB_PRESENT = ModList.get().isLoaded("sophisticatedcore");
         TB_PRESENT = ModList.get().isLoaded("travelersbackpack");
+        BP_PRESENT = ModList.get().isLoaded("backpacked");
 
         if (SB_PRESENT) {
             event.enqueueWork(com.bpmelodies.adapter.sb.SbAdapter::init);
@@ -43,8 +45,11 @@ public final class BpMelodiesMod {
             event.enqueueWork(com.bpmelodies.adapter.tb.TbAdapter::init);
             LOGGER.info("Traveler's Backpack adapter enabled.");
         }
-        if (!SB_PRESENT && !TB_PRESENT) {
-            LOGGER.info("Neither Sophisticated Backpacks nor Traveler's Backpack found — bpmelodies will be inactive.");
+        if (BP_PRESENT) {
+            LOGGER.info("Backpacked adapter enabled.");
+        }
+        if (!SB_PRESENT && !TB_PRESENT && !BP_PRESENT) {
+            LOGGER.info("No supported backpack mod found — bpmelodies will be inactive.");
         }
     }
 }
