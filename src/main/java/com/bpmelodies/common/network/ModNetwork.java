@@ -19,6 +19,7 @@ public final class ModNetwork {
     public static final ResourceLocation TOGGLE_PLAYLIST = id("toggle_playlist");
     public static final ResourceLocation PLAY_START = id("play_start");
     public static final ResourceLocation PLAY_STOP = id("play_stop");
+    public static final ResourceLocation DISC_START = id("disc_start");
 
     private static ResourceLocation id(String path) {
         return new ResourceLocation(BpMelodiesMod.MODID, path);

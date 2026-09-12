@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.RecordItem;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
@@ -50,6 +51,33 @@ public interface JukeboxAccess {
 
     static boolean isInstrument(ItemStack stack) {
         return !stack.isEmpty() && stack.getItem() instanceof InstrumentItem;
+    }
+
+    static boolean isDisc(ItemStack stack) {
+        return !stack.isEmpty() && stack.getItem() instanceof RecordItem;
+    }
+
+    default java.util.List<Integer> discSlots() {
+        java.util.List<ItemStack> stacks = visibleSlotStacks();
+        java.util.List<Integer> out = new java.util.ArrayList<>();
+        for (int i = 0; i < stacks.size(); i++) {
+            if (isDisc(stacks.get(i))) out.add(i);
+        }
+        return out;
+    }
+
+    default int findDiscSlot() {
+        java.util.List<Integer> slots = discSlots();
+        return slots.isEmpty() ? -1 : slots.get(0);
+    }
+
+    // SB and TB hand discs to their own host-mod jukebox, so only Backpacked opts in here.
+    default boolean needsDiscPlayback() {
+        return false;
+    }
+
+    default boolean useDiscPlayback() {
+        return needsDiscPlayback() && (findInstrumentSlot() < 0 || !isImEnabled());
     }
 
     default boolean isImEnabled() {

@@ -61,14 +61,15 @@ public abstract class BpBackpackScreenMixin {
         if (found.isEmpty()) return;
         JukeboxAccess access = found.get();
         ItemStack instrument = access.firstInstrumentStack();
-        if (instrument == null) return;
+        int discSlot = access.findDiscSlot();
+        if (instrument == null && discSlot < 0) return;
 
         int x = leftPos + imageWidth + 2;
         int y = topPos;
-        MelodyPickerWidget p = bpm$picker(x + (BPM$W - MelodyPickerWidget.W) / 2, y + 46);
-        bpm$drawPanel(g, x, y, 46 + p.getEffectiveHeight() + 6);
+        MelodyPickerWidget p = instrument == null ? null : bpm$picker(x + (BPM$W - MelodyPickerWidget.W) / 2, y + 46);
+        bpm$drawPanel(g, x, y, p == null ? 49 : 46 + p.getEffectiveHeight() + 6);
 
-        g.renderItem(instrument, x + 6, y + 6);
+        g.renderItem(instrument != null ? instrument : access.discInventory().getStackInSlot(discSlot), x + 6, y + 6);
 
         TbIconButton.draw(g, x + 24, y + 6, mouseX, mouseY, TbIconButton.Icon.PREV, false);
         TbIconButton.draw(g, x + 42, y + 6, mouseX, mouseY, TbIconButton.Icon.STOP, false);
@@ -86,22 +87,27 @@ public abstract class BpBackpackScreenMixin {
                 shuffle ? TbIconButton.Icon.SHUFFLE_ON : TbIconButton.Icon.SHUFFLE_OFF, false);
         TbIconButton.draw(g, x + 60, y + 25, mouseX, mouseY, repIcon, false);
 
-        p.render(g, mouseX, mouseY, partialTick);
+        if (p != null) p.render(g, mouseX, mouseY, partialTick);
     }
 
     @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
     private void bpm$intercept(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
         Optional<JukeboxAccess> found = bpm$access();
-        if (found.isEmpty() || found.get().firstInstrumentStack() == null) return;
+        if (found.isEmpty()) return;
+        JukeboxAccess access = found.get();
+        boolean hasInstrument = access.firstInstrumentStack() != null;
+        if (!hasInstrument && access.findDiscSlot() < 0) return;
 
         int x = leftPos + imageWidth + 2;
         int y = topPos;
 
-        MelodyPickerWidget p = bpm$picker(x + (BPM$W - MelodyPickerWidget.W) / 2, y + 46);
-        if (p.isMouseOver(mouseX, mouseY)) {
-            p.mouseClicked(mouseX, mouseY, button);
-            cir.setReturnValue(true);
-            return;
+        if (hasInstrument) {
+            MelodyPickerWidget p = bpm$picker(x + (BPM$W - MelodyPickerWidget.W) / 2, y + 46);
+            if (p.isMouseOver(mouseX, mouseY)) {
+                p.mouseClicked(mouseX, mouseY, button);
+                cir.setReturnValue(true);
+                return;
+            }
         }
 
         SetTransportFlagMsg.Op op = null;
