@@ -30,6 +30,7 @@ public final class BpMelodiesMod {
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> com.bpmelodies.client.ClientEvents.register());
 
         MinecraftForge.EVENT_BUS.register(com.bpmelodies.common.playback.ServerPlaybackTracker.class);
+        MinecraftForge.EVENT_BUS.register(com.bpmelodies.common.playback.ServerDiscTracker.getInstance());
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {

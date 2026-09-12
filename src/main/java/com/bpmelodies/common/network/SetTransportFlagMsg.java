@@ -2,6 +2,7 @@ package com.bpmelodies.common.network;
 
 import com.bpmelodies.common.handler.JukeboxAccess;
 import com.bpmelodies.common.playback.PlaybackNbt;
+import com.bpmelodies.common.playback.ServerDiscTracker;
 import com.bpmelodies.common.playback.ServerPlaybackTracker;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -30,8 +31,18 @@ public record SetTransportFlagMsg(Op op, int value) {
         if (player == null) return;
         JukeboxAccess.findJukeboxInOpenMenu(player).ifPresent(access -> {
             switch (msg.op) {
-                case PLAY -> ServerPlaybackTracker.startFromAccess(player, access);
-                case STOP -> ServerPlaybackTracker.stop(access.storageUuid());
+                case PLAY -> {
+                    if (access.useDiscPlayback()) {
+                        ServerDiscTracker.getInstance().startFromAccess(player, access);
+                    } else {
+                        ServerDiscTracker.getInstance().stop(access.storageUuid());
+                        ServerPlaybackTracker.startFromAccess(player, access);
+                    }
+                }
+                case STOP -> {
+                    ServerPlaybackTracker.stop(access.storageUuid());
+                    ServerDiscTracker.getInstance().stop(access.storageUuid());
+                }
                 case NEXT -> handleSkip(player, access, +1);
                 case PREV -> handleSkip(player, access, -1);
                 case TOGGLE_SHUFFLE -> {
@@ -49,6 +60,10 @@ public record SetTransportFlagMsg(Op op, int value) {
     }
 
     private static void handleSkip(Player player, JukeboxAccess access, int dir) {
+        if (access.useDiscPlayback()) {
+            ServerDiscTracker.getInstance().skip(player, access, dir);
+            return;
+        }
         int slot = access.findInstrumentSlot();
         if (slot < 0) return;
         ItemStack instrument = access.discInventory().getStackInSlot(slot);
