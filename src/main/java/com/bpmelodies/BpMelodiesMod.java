@@ -2,6 +2,7 @@ package com.bpmelodies;
 
 import com.bpmelodies.common.network.ModNetwork;
 import com.bpmelodies.common.network.RequestMelodyListMsg;
+import com.bpmelodies.common.playback.ServerDiscTracker;
 import com.bpmelodies.common.playback.ServerPlaybackTracker;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -29,7 +30,11 @@ public final class BpMelodiesMod implements ModInitializer {
         ModNetwork.registerServer();
 
         ServerTickEvents.END_WORLD_TICK.register(ServerPlaybackTracker::onLevelTick);
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> ServerPlaybackTracker.onServerStopping());
+        ServerTickEvents.END_WORLD_TICK.register(level -> ServerDiscTracker.getInstance().onLevelTick(level));
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            ServerPlaybackTracker.onServerStopping();
+            ServerDiscTracker.getInstance().onServerStopping();
+        });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 RequestMelodyListMsg.sendLibraryTo(handler.player));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->

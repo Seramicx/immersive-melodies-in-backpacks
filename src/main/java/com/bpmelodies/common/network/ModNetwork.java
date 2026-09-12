@@ -20,6 +20,7 @@ public final class ModNetwork {
 
         PayloadTypeRegistry.playS2C().register(BackpackPlayStartMsg.TYPE, BackpackPlayStartMsg.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(BackpackPlayStopMsg.TYPE, BackpackPlayStopMsg.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(BackpackDiscStartMsg.TYPE, BackpackDiscStartMsg.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(MelodyLibrarySyncMsg.TYPE, MelodyLibrarySyncMsg.STREAM_CODEC);
     }
 

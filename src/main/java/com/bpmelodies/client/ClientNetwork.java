@@ -1,6 +1,8 @@
 package com.bpmelodies.client;
 
 import com.bpmelodies.client.playback.ClientPlaybackTracker;
+import com.bpmelodies.client.playback.ClientDiscTracker;
+import com.bpmelodies.common.network.BackpackDiscStartMsg;
 import com.bpmelodies.common.network.BackpackPlayStartMsg;
 import com.bpmelodies.common.network.BackpackPlayStopMsg;
 import com.bpmelodies.common.network.MelodyLibrarySyncMsg;
@@ -19,7 +21,12 @@ public final class ClientNetwork {
         ClientPlayNetworking.registerGlobalReceiver(BackpackPlayStartMsg.TYPE, (msg, ctx) ->
                 ctx.client().execute(() -> ClientPlaybackTracker.start(msg)));
         ClientPlayNetworking.registerGlobalReceiver(BackpackPlayStopMsg.TYPE, (msg, ctx) ->
-                ctx.client().execute(() -> ClientPlaybackTracker.stop(msg.storageUuid())));
+                ctx.client().execute(() -> {
+                    ClientPlaybackTracker.stop(msg.storageUuid());
+                    ClientDiscTracker.getInstance().stop(msg.storageUuid());
+                }));
+        ClientPlayNetworking.registerGlobalReceiver(BackpackDiscStartMsg.TYPE, (msg, ctx) ->
+                ctx.client().execute(() -> ClientDiscTracker.getInstance().start(msg)));
         ClientPlayNetworking.registerGlobalReceiver(MelodyLibrarySyncMsg.TYPE, (msg, ctx) ->
                 ctx.client().execute(() -> MelodyLibrarySyncMsg.apply(msg)));
     }

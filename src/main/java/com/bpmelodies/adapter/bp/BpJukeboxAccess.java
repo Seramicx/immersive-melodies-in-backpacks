@@ -63,10 +63,10 @@ public final class BpJukeboxAccess implements JukeboxAccess {
         return out;
     }
 
-    // The worn backpack stack is never synced to clients, so state rides on the instrument instead.
+    // The worn backpack stack is never synced to clients, so state rides on the instrument or first disc instead.
     @Override
     public ItemStack upgradeStack() {
-        int slot = findInstrumentSlot();
+        int slot = carrierSlot();
         return slot < 0 ? ItemStack.EMPTY : contents.getItem(slot);
     }
 
@@ -84,7 +84,17 @@ public final class BpJukeboxAccess implements JukeboxAccess {
 
     @Override
     public void markUpgradeDirty() {
-        int slot = findInstrumentSlot();
+        int slot = carrierSlot();
         if (slot >= 0) markDiscSlotDirty(slot);
+    }
+
+    private int carrierSlot() {
+        int slot = findInstrumentSlot();
+        return slot >= 0 ? slot : findDiscSlot();
+    }
+
+    @Override
+    public boolean needsDiscPlayback() {
+        return true;
     }
 }

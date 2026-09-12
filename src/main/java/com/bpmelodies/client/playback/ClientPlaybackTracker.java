@@ -44,6 +44,7 @@ public final class ClientPlaybackTracker {
     public static void clearAll() {
         for (BackpackPlaybackSession s : SESSIONS.values()) s.stop();
         SESSIONS.clear();
+        ClientDiscTracker.getInstance().clearAll();
     }
 
     public static void tick() {
