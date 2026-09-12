@@ -1,6 +1,7 @@
 package com.bpmelodies.common.network;
 
 import com.bpmelodies.BpMelodiesMod;
+import com.bpmelodies.client.playback.ClientDiscTracker;
 import com.bpmelodies.client.playback.ClientPlaybackTracker;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -25,5 +26,6 @@ public record BackpackPlayStopMsg(UUID storageUuid) implements CustomPacketPaylo
 
     public static void handle(BackpackPlayStopMsg msg, IPayloadContext ctx) {
         ClientPlaybackTracker.stop(msg.storageUuid);
+        ClientDiscTracker.getInstance().stop(msg.storageUuid);
     }
 }

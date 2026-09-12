@@ -17,6 +17,7 @@ public final class ModNetwork {
 
         reg.playToClient(BackpackPlayStartMsg.TYPE, BackpackPlayStartMsg.STREAM_CODEC, BackpackPlayStartMsg::handle);
         reg.playToClient(BackpackPlayStopMsg.TYPE, BackpackPlayStopMsg.STREAM_CODEC, BackpackPlayStopMsg::handle);
+        reg.playToClient(BackpackDiscStartMsg.TYPE, BackpackDiscStartMsg.STREAM_CODEC, BackpackDiscStartMsg::handle);
         reg.playToClient(MelodyLibrarySyncMsg.TYPE, MelodyLibrarySyncMsg.STREAM_CODEC, MelodyLibrarySyncMsg::handle);
     }
 }

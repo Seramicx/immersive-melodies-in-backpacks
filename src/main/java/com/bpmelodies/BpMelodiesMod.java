@@ -30,6 +30,7 @@ public final class BpMelodiesMod {
         }
 
         NeoForge.EVENT_BUS.register(com.bpmelodies.common.playback.ServerPlaybackTracker.class);
+        NeoForge.EVENT_BUS.register(com.bpmelodies.common.playback.ServerDiscTracker.getInstance());
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
