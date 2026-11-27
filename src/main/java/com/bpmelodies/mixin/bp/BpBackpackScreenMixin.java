@@ -23,6 +23,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Optional;
+import com.bpmelodies.client.PanelArea;
+import net.minecraft.client.gui.screens.Screen;
 
 @Mixin(AbstractContainerScreen.class)
 public abstract class BpBackpackScreenMixin {
@@ -60,16 +62,26 @@ public abstract class BpBackpackScreenMixin {
     @Inject(method = "render", at = @At("RETURN"))
     private void bpm$renderPanel(GuiGraphics g, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         Optional<JukeboxAccess> found = bpm$access();
-        if (found.isEmpty()) return;
+        if (found.isEmpty()) {
+            PanelArea.clear((Screen) (Object) this);
+            return;
+        }
         JukeboxAccess access = found.get();
         ItemStack instrument = access.firstInstrumentStack();
         int discSlot = access.findDiscSlot();
-        if (instrument == null && discSlot < 0) return;
+        if (instrument == null && discSlot < 0) {
+            PanelArea.clear((Screen) (Object) this);
+            return;
+        }
 
         int x = leftPos + imageWidth + BPM$GAP;
+
+        x = Math.min(x, ((Screen) (Object) this).width - BPM$W - 2);
         int y = topPos;
         MelodyPickerWidget p = instrument == null ? null : bpm$picker(x + (BPM$W - MelodyPickerWidget.W) / 2, y + 46);
-        bpm$drawPanel(g, x, y, p == null ? 49 : 46 + p.getEffectiveHeight() + 6);
+        int h = p == null ? 49 : 46 + p.getEffectiveHeight() + 6;
+        PanelArea.set((Screen) (Object) this, x, y, BPM$W, h);
+        bpm$drawPanel(g, x, y, h);
 
         g.renderItem(instrument != null ? instrument : access.discInventory().getStackInSlot(discSlot), x + 6, y + 6);
 
@@ -101,6 +113,8 @@ public abstract class BpBackpackScreenMixin {
         if (!hasInstrument && access.findDiscSlot() < 0) return;
 
         int x = leftPos + imageWidth + BPM$GAP;
+
+        x = Math.min(x, ((Screen) (Object) this).width - BPM$W - 2);
         int y = topPos;
 
         if (hasInstrument) {

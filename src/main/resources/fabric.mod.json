@@ -13,6 +13,9 @@
         ],
         "client": [
             "com.bpmelodies.client.BpMelodiesClient"
+        ],
+        "jei_mod_plugin": [
+            "com.bpmelodies.compat.jei.BpJeiPlugin"
         ]
     },
     "mixins": [
