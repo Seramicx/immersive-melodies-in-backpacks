@@ -32,6 +32,8 @@ public final class BpJukeboxAccess implements JukeboxAccess {
     public static Optional<JukeboxAccess> find(Player player) {
         if (!(player.containerMenu instanceof BackpackContainerMenu menu)) return Optional.empty();
         Entity found = player.level().getEntity(menu.getOwnerId());
+        // Backpacked doesn't send the owner's id to the client, only whether the backpack is your own
+        if (found == null && menu.isOwner()) found = player;
         if (!(found instanceof Player backpackOwner)) return Optional.empty();
         return Optional.of(new BpJukeboxAccess(backpackOwner, menu.getBackpackIndex(), menu.getBackpackInventory()));
     }
