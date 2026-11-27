@@ -30,11 +30,13 @@ repositories {
         content { includeGroup 'maven.modrinth' }
     }
     maven { url 'https://cursemaven.com' }
+    maven { url 'https://maven.blamejared.com' }
     maven { url 'https://mvn.devos.one/snapshots/' }
     maven { url 'https://mvn.devos.one/releases/' }
 }
 
 dependencies {
+    compileOnly "mezz.jei:jei-1.21.1-common-api:19.76.1.482"
     minecraft "com.mojang:minecraft:${minecraft_version}"
     mappings loom.layered {
         officialMojangMappings()
