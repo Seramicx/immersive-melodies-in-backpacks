@@ -31,6 +31,8 @@ public abstract class BpBackpackScreenMixin {
 
     @Unique private static final ResourceLocation BPM$PANEL = new ResourceLocation("textures/gui/container/generic_54.png");
     @Unique private static final int BPM$W = 84;
+    // clears the tab strip Backpacked draws down the right edge of the window
+    @Unique private static final int BPM$GAP = 20;
 
     @Unique private MelodyPickerWidget bpm$picker;
 
@@ -63,7 +65,7 @@ public abstract class BpBackpackScreenMixin {
         if (instrument == null && discSlot < 0) return;
 
         AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
-        int x = screen.getGuiLeft() + screen.getXSize() + 2;
+        int x = screen.getGuiLeft() + screen.getXSize() + BPM$GAP;
         int y = screen.getGuiTop();
         MelodyPickerWidget p = instrument == null ? null : bpm$picker(x + (BPM$W - MelodyPickerWidget.W) / 2, y + 46);
         bpm$drawPanel(g, x, y, p == null ? 49 : 46 + p.getEffectiveHeight() + 6);
@@ -98,7 +100,7 @@ public abstract class BpBackpackScreenMixin {
         if (!hasInstrument && access.findDiscSlot() < 0) return;
 
         AbstractContainerScreen<?> screen = (AbstractContainerScreen<?>) (Object) this;
-        int x = screen.getGuiLeft() + screen.getXSize() + 2;
+        int x = screen.getGuiLeft() + screen.getXSize() + BPM$GAP;
         int y = screen.getGuiTop();
 
         if (hasInstrument) {
