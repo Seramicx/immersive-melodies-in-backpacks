@@ -38,9 +38,11 @@ neoForge {
 repositories {
     maven { url 'https://api.modrinth.com/maven' }
     maven { url 'https://cursemaven.com' }
+    maven { url 'https://maven.blamejared.com' }
 }
 
 dependencies {
+    compileOnly "mezz.jei:jei-1.21.1-neoforge-api:19.76.1.482"
     compileOnly "maven.modrinth:sophisticated-backpacks:1.21.1-3.25.49.1791"
     compileOnly "maven.modrinth:sophisticated-core:1.21.1-1.4.42.1892"
     compileOnly "maven.modrinth:travelersbackpack:1.21.1-10.1.36"
